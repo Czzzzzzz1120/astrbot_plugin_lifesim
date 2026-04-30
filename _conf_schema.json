@@ -1,0 +1,27 @@
+{
+  "provider_id": {
+    "description": "对话模型",
+    "type": "string",
+    "_special": "select_provider",
+    "hint": "从 AstrBot 已添加的模型中选择，优先级高于下方手动配置",
+    "default": ""
+  },
+  "api_key": {
+    "description": "手动配置 - API Key",
+    "type": "string",
+    "hint": "未选择上方模型时生效，输入 OpenAI 兼容的 API Key",
+    "default": ""
+  },
+  "api_url": {
+    "description": "手动配置 - API 地址",
+    "type": "string",
+    "hint": "未选择上方模型时生效，如 https://api.deepseek.com/v1",
+    "default": "https://api.openai.com/v1"
+  },
+  "model": {
+    "description": "手动配置 - 模型名称",
+    "type": "string",
+    "hint": "未选择上方模型时生效，如 gpt-4o、deepseek-chat 等",
+    "default": "gpt-3.5-turbo"
+  }
+}
