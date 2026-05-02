@@ -487,7 +487,12 @@ class LifeSimPlugin(Star):
             self._touch(gs)
             choice = self._args(event).strip()
             try:
-                yield self._respond(event, await self._handle_choice(pid, gs, choice))
+                result = await self._handle_choice(pid, gs, choice)
+                if isinstance(result, list):
+                    for text in result:
+                        yield self._respond(event, text)
+                else:
+                    yield self._respond(event, result)
             except Exception as e:
                 logger.error(f"cmd_choose error: {traceback.format_exc()}")
                 yield self._respond(event, f"❌ 选择处理失败: {e}")
@@ -571,56 +576,59 @@ class LifeSimPlugin(Star):
     @filter.command("人生天赋", alias={"rltalent", "rltf"})
     async def cmd_talent(self, event: AstrMessageEvent):
         event.should_call_llm(False)
-        gs = self._get_game(event)
-        if not gs:
-            yield self._respond(event, "❌ 未开始游戏\n人生开启 <世界观> →")
-            return
-        if not gs.talents:
-            yield self._respond(event, "❌ 未获得天赋，请先完成角色创建")
-            return
-        lines = ["⭐ 天赋"]
-        for t in gs.talents:
-            lines.append(f"·{t['name']} {t['desc']}")
-        if gs.stage not in ("init", "dead"):
-            lines.append("人生继续 →")
-        yield self._respond(event, "\n".join(lines))
+        async with self._lock:
+            gs = self._get_game(event)
+            if not gs:
+                yield self._respond(event, "❌ 未开始游戏\n人生开启 <世界观> →")
+                return
+            if not gs.talents:
+                yield self._respond(event, "❌ 未获得天赋，请先完成角色创建")
+                return
+            lines = ["⭐ 天赋"]
+            for t in gs.talents:
+                lines.append(f"·{t['name']} {t['desc']}")
+            if gs.stage not in ("init", "dead"):
+                lines.append("人生继续 →")
+            yield self._respond(event, "\n".join(lines))
 
     @filter.command("人生属性", alias={"rlattr", "rlsx"})
     async def cmd_attr(self, event: AstrMessageEvent):
         event.should_call_llm(False)
-        gs = self._get_game(event)
-        if not gs:
-            yield self._respond(event, "❌ 未开始游戏\n人生开启 <世界观> →")
-            return
-        lines = [
-            f"📊 {gs.player_name or '未命名'} · {gs.age}岁",
-            self._attr_text(gs.attrs),
-            f"寿命: {gs.max_age}岁"
-        ]
-        if gs.stage not in ("init", "dead"):
-            lines.append("人生继续 →")
-        yield self._respond(event, "\n".join(lines))
+        async with self._lock:
+            gs = self._get_game(event)
+            if not gs:
+                yield self._respond(event, "❌ 未开始游戏\n人生开启 <世界观> →")
+                return
+            lines = [
+                f"📊 {gs.player_name or '未命名'} · {gs.age}岁",
+                self._attr_text(gs.attrs),
+                f"寿命: {gs.max_age}岁"
+            ]
+            if gs.stage not in ("init", "dead"):
+                lines.append("人生继续 →")
+            yield self._respond(event, "\n".join(lines))
 
     @filter.command("人生状态", alias={"rlstatus", "rlzt"})
     async def cmd_status(self, event: AstrMessageEvent):
         event.should_call_llm(False)
-        gs = self._get_game(event)
-        if not gs:
-            yield self._respond(event, "❌ 未开始游戏\n人生开启 <世界观> →")
-            return
-        lines = [
-            f"📋 {gs.player_name or '未设定'} · {gs.age}岁",
-            f"{gs.world} · {gs.identity.get('name', '未设定')} · {gs.gender}",
-            self._attr_text(gs.attrs),
-            f"寿命: {gs.max_age}岁",
-        ]
-        if gs.talents:
-            lines.append(f"⭐ {', '.join(t['name'] for t in gs.talents)}")
-        if gs.important_choices:
-            lines.append(f"⚡ 抉择: {len(gs.important_choices)}次")
-        if gs.stage not in ("init", "dead"):
-            lines.append("人生继续 →")
-        yield self._respond(event, "\n".join(lines))
+        async with self._lock:
+            gs = self._get_game(event)
+            if not gs:
+                yield self._respond(event, "❌ 未开始游戏\n人生开启 <世界观> →")
+                return
+            lines = [
+                f"📋 {gs.player_name or '未设定'} · {gs.age}岁",
+                f"{gs.world} · {gs.identity.get('name', '未设定')} · {gs.gender}",
+                self._attr_text(gs.attrs),
+                f"寿命: {gs.max_age}岁",
+            ]
+            if gs.talents:
+                lines.append(f"⭐ {', '.join(t['name'] for t in gs.talents)}")
+            if gs.important_choices:
+                lines.append(f"⚡ 抉择: {len(gs.important_choices)}次")
+            if gs.stage not in ("init", "dead"):
+                lines.append("人生继续 →")
+            yield self._respond(event, "\n".join(lines))
 
     @filter.command("人生继续", alias={"rlnext", "rljx"})
     async def cmd_next(self, event: AstrMessageEvent):
@@ -720,24 +728,25 @@ class LifeSimPlugin(Star):
         if not self._is_group(event):
             yield self._respond(event, "❌ 排行榜仅在群聊中可用！")
             return
-        gid = event.get_group_id()
-        group_players = []
-        for pid, gs in self.games.items():
-            if pid.startswith(f"{gid}_"):
-                group_players.append(gs)
-        if not group_players:
-            yield self._respond(event, "群里还没有人开始游戏！\n人生开启 <世界观> →")
-            return
-        lines = ["🏆 群内排行"]
-        for i, gs in enumerate(sorted(group_players, key=lambda g: g.age, reverse=True), 1):
-            status = "💀" if not gs.alive else ""
-            name = gs.player_name or gs.player_nickname or "未知"
-            stage_label = "未出生" if gs.age == 0 else ""
-            lines.append(f"{i}.{name}{status} {gs.world} {gs.age}岁{stage_label} {self._attr_text(gs.attrs)}")
-        lines.append(f"共{len(group_players)}人")
-        text = "\n".join(lines)
-        for chunk in self._split_text(text):
-            yield self._respond(event, chunk)
+        async with self._lock:
+            gid = event.get_group_id()
+            group_players = []
+            for pid, gs in self.games.items():
+                if pid.startswith(f"{gid}_"):
+                    group_players.append(gs)
+            if not group_players:
+                yield self._respond(event, "群里还没有人开始游戏！\n人生开启 <世界观> →")
+                return
+            lines = ["🏆 群内排行"]
+            for i, gs in enumerate(sorted(group_players, key=lambda g: g.age, reverse=True), 1):
+                status = "💀" if not gs.alive else ""
+                name = gs.player_name or gs.player_nickname or "未知"
+                stage_label = "未出生" if gs.age == 0 else ""
+                lines.append(f"{i}.{name}{status} {gs.world} {gs.age}岁{stage_label} {self._attr_text(gs.attrs)}")
+            lines.append(f"共{len(group_players)}人")
+            text = "\n".join(lines)
+            for chunk in self._split_text(text):
+                yield self._respond(event, chunk)
 
     def _random_talents(self, count: int = 3) -> list:
         weighted = []
@@ -944,100 +953,7 @@ class LifeSimPlugin(Star):
             )
 
         if stage == "allocate_points":
-            if choice in ("完成", "done", "ok"):
-                gs.stage = "birth"
-                gs.scheduled_events = generate_scheduled_events(gs.max_age)
-                world_info = WORLDS.get(gs.world, {})
-                start_desc = world_info.get("start", "你来到了这个世界。")
-                prompt = self._build_system_prompt(gs)
-                user_msg = (
-                    f"玩家{gs.player_name}（{gs.gender}性，{gs.identity.get('name', '普通人')}）刚刚出生。"
-                    f"世界观：{gs.world}。{start_desc}。"
-                    f"请用2-3句话描述出生时的场景。"
-                )
-                if self.provider or self.client:
-                    try:
-                        birth_narrative = await self._get_response(prompt, user_msg, 0.9, 200)
-                    except Exception:
-                        birth_narrative = start_desc
-                else:
-                    birth_narrative = start_desc
-                gs.events_history.append({"age": 0, "text": birth_narrative})
-                return (
-                    f"── {gs.player_name}·0岁 ──\n"
-                    f"{birth_narrative}\n"
-                    f"🧑 {gs.player_name} | {gs.gender} | {gs.identity.get('name', '')}\n"
-                    f"⭐ {' + '.join(t['name'] for t in gs.talents) if gs.talents else '无'}\n"
-                    f"{self._attr_text(gs.attrs)}\n"
-                    f"⏳ 预计寿命：{gs.max_age}岁\n"
-                    f"人生继续 →"
-                )
-
-            attr_map = {"力量": "strength", "智力": "intelligence", "魅力": "charisma", "运气": "luck"}
-            tokens = choice.split()
-            if len(tokens) < 2 or len(tokens) % 2 != 0:
-                return (
-                    f"❌ 格式错误\n"
-                    f"人生加点 力量 3 智力 2\n"
-                    f"人生加点 6 9 9 6（力 智 魅 运）\n"
-                    f"{self._fmt_attrs(gs.attrs, gs.free_points)}"
-                )
-            allocated = 0
-            details = []
-            i = 0
-            while i < len(tokens):
-                attr_name = tokens[i]
-                attr_key = attr_map.get(attr_name)
-                if not attr_key:
-                    return f"❌ 未知属性 '{attr_name}'\n可选：力量/智力/魅力/运气"
-                try:
-                    points = int(tokens[i + 1])
-                except ValueError:
-                    return f"❌ '{tokens[i + 1]}' 不是数字"
-                if points < 0:
-                    return "❌ 不能为负数"
-                allocated += points
-                if allocated > gs.free_points:
-                    return f"❌ 仅有 {gs.free_points} 点，已尝试 {allocated} 点"
-                gs.attrs[attr_key] += points
-                details.append(f"{attr_name}+{points}")
-                i += 2
-            gs.free_points -= allocated
-            detail_text = "、".join(details)
-            if gs.free_points > 0:
-                return (
-                    f"{detail_text}\n"
-                    f"{self._fmt_attrs(gs.attrs, gs.free_points)}\n"
-                    f"人生加点 / 人生加点 完成"
-                )
-            gs.stage = "birth"
-            gs.scheduled_events = generate_scheduled_events(gs.max_age)
-            world_info = WORLDS.get(gs.world, {})
-            start_desc = world_info.get("start", "你来到了这个世界。")
-            prompt = self._build_system_prompt(gs)
-            user_msg = (
-                f"玩家{gs.player_name}（{gs.gender}性，{gs.identity.get('name', '普通人')}）刚刚出生。"
-                f"世界观：{gs.world}。{start_desc}。"
-                f"请用2-3句话描述出生时的场景。"
-            )
-            if self.provider or self.client:
-                try:
-                    birth_narrative = await self._get_response(prompt, user_msg, 0.9, 200)
-                except Exception:
-                    birth_narrative = start_desc
-            else:
-                birth_narrative = start_desc
-            gs.events_history.append({"age": 0, "text": birth_narrative})
-            return (
-                f"✅ {detail_text}\n"
-                f"── {gs.player_name}·0岁 ──\n"
-                f"{birth_narrative}\n"
-                f"🧑 {gs.player_name} | {gs.gender} | {gs.identity.get('name', '')}\n"
-                f"⭐ {' + '.join(t['name'] for t in gs.talents) if gs.talents else '无'}\n"
-                f"{self._attr_text(gs.attrs)}\n"
-                f"⏳ 预计寿命：{gs.max_age}岁\n"
-                f"人生继续 →"
-            )
+            return f"⏳ 请使用 人生加点 分配属性\n人生加点 力量 3 智力 2\n人生加点 6 9 9 6\n人生加点 随机\n人生加点 完成"
 
         if stage == "important_event":
             evt = gs.current_important
