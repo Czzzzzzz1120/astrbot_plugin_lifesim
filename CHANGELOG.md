@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-05-16
+
+### Changed
+
+- **属性系统重构**：新增中央属性修改方法 `_mod_attr()`，所有属性加减统一通过该方法处理，自动限制范围 [1, 10]
+- **人生评价重构**：模仿「人生重开模拟器」评价风格，全面重写结算界面
+  - 新增可视化属性进度条（▮▯），直观展示五项属性水平
+  - 新增属性等级评语（金刚不坏/天才学霸/倾国倾城/人间开心果/富可敌国 等）
+  - 新增幽默人生总评（根据 SSS~F 等级生成不同风格的调侃文字）
+  - 新增享年分段评价（高寿善终/花甲之年/英年早逝/幼年夭折）
+  - 结算面板包含：属性评价 → 人生总评 → 享年评价 → 天赋与抉择统计
+
+### Fixed
+
+- 修复多处属性修改绕过边界检查的问题：天赋加成、身份加成、自定义选择、风险惩罚/奖励、随机属性变化等 8 处统一使用 `_mod_attr`
+
 ## [1.6.1] - 2026-05-16
 
 ### Fixed
