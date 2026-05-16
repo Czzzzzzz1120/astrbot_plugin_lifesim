@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-05-16
+
+### Added
+
+- 自定义选择现在由 AI 智能判别属性变化：要求 AI 返回 JSON `{"narrative":"...","attr_change":{...}}`
+- 新增 `_parse_custom_result` 解析 AI 的自定义选择结果并应用属性变化
+- 新增 `_fmt_custom_changes` 将自定义属性变化格式化为【属性+N】显示
+
+### Changed
+
+- 属性校验大幅放宽：添加 12 组英→中映射表（如 strength→体质），AI 不再因英文属性名被丢弃
+- 风险系统重新平衡：
+  - 低风险：+2~3 点（稳定，无额外风险）
+  - 中风险：+3~5 点 + 35% 惩罚(-1~2) 或 20% 额外奖励(+1~2)
+  - 高风险：+5~7 点 + 55% 惩罚(-1~3，可能双属性)
+- 属性变化统一使用边界保护 `max(1, min(10, ...)`
+
+### Fixed
+
+- 自定义选择（"4"/非数字输入）不再零属性变化，AI 智能判别效果
+- AI 生成英文属性名导致选项被丢弃 → 现在自动映射为中文属性名
+- 中风险之前仅有 20% +1 奖励，现增加惩罚机制更加合理
+
 ## [1.5.0] - 2026-05-16
 
 ### Changed

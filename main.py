@@ -776,12 +776,12 @@ class LifeSimPlugin(Star):
             "你是人生模拟游戏编剧。生成事件场景和3个选项。\n\n"
             "【场景描述】30-40字，基于事件标题和角色处境。\n\n"
             "【选项要求】\n"
-            "- 低风险：稳定+2点，8-12字\n"
-            "- 中风险：+2-3点，20%额外奖励，8-12字\n"
-            "- 高风险：+3-4点，40%惩罚，8-12字（可能导致严重后果）\n"
+            "- 低风险：稳定+2~3点，8-12字\n"
+            "- 中风险：+3~5点（可能+2~4惩罚），8-12字\n"
+            "- 高风险：+5~7点（可能-3~5惩罚），8-12字\n"
             "- 属性：体质/智力/颜值/快乐/家境\n\n"
             "严格JSON输出：\n"
-            '{"event_narrative":"场景(30-40字)","choices":[{"text":"行动(8-12字)","risk":"低","attr_change":{"属性":2}},{"text":"...","risk":"中","attr_change":{...}},{"text":"...","risk":"高","attr_change":{...}}]}'
+            '{"event_narrative":"场景(30-40字)","choices":[{"text":"行动(8-12字)","risk":"低/中/高","attr_change":{"体质":2}},{"text":"...","risk":"中","attr_change":{...}},{"text":"...","risk":"高","attr_change":{...}}]}'
         )
         recent_events = gs.events_history[-3:] if gs.events_history else []
         recent_desc = "；".join(f"{e['age']}岁:{e.get('text', '')[:40]}" for e in recent_events) if recent_events else "暂无"
@@ -815,15 +815,25 @@ class LifeSimPlugin(Star):
                 choices = parsed["choices"]
                 if isinstance(choices, list) and len(choices) == 3:
                     result = []
+                    ATTR_MAP = {
+                        "strength": "体质", "intelligence": "智力", "charisma": "颜值",
+                        "charm": "颜值", "luck": "家境", "fortune": "家境",
+                        "happy": "快乐", "happiness": "快乐", "joy": "快乐",
+                        "health": "体质", "constitution": "体质",
+                        "appearance": "颜值", "beauty": "颜值",
+                        "wealth": "家境", "money": "家境",
+                    }
                     for ch in choices:
                         if isinstance(ch, dict) and "text" in ch and "risk" in ch and "attr_change" in ch:
                             if ch["risk"] not in ("低", "中", "高"):
                                 ch["risk"] = "中"
-                            for k in list(ch["attr_change"].keys()):
-                                if k not in ("体质", "智力", "颜值", "快乐", "家境"):
-                                    del ch["attr_change"][k]
-                            if ch["attr_change"]:
-                                result.append(ch)
+                            normalized = {}
+                            for k, v in ch["attr_change"].items():
+                                key = ATTR_MAP.get(k, k)
+                                if key in ("体质", "智力", "颜值", "快乐", "家境"):
+                                    normalized[key] = int(v) if isinstance(v, (int, float)) else 2
+                            ch["attr_change"] = normalized
+                            result.append(ch)
                     if len(result) == 3:
                         logger.info(f"AI generated event content for {evt['title']}: {len(result)} choices")
                         return {"event_narrative": event_narrative, "choices": result}
@@ -962,22 +972,33 @@ class LifeSimPlugin(Star):
                 gs.important_choices.append({"age": gs.age, "event": evt.get("title", ""), "choice": f"自定义: {custom}" if custom else "自定义"})
                 gs.current_important = {}
                 gs.stage = "playing"
+                attr_desc = ", ".join(f"{k}={v}" for k, v in gs.attrs.items())
                 prompt = self._build_system_prompt(gs)
                 user_msg = (
-                    f"玩家{gs.player_name}在{gs.age}岁时发生了重要事件：{evt.get('title', '')}，"
-                    f"事件详情：{narrative}，玩家选择了自定义行动：{custom or '自行决定'}。"
-                    f"用50字描述结果。"
+                    f"玩家{gs.player_name}在{gs.age}岁时发生了重要事件：{evt.get('title', '')}。\n"
+                    f"事件详情：{narrative}\n"
+                    f"当前属性：{attr_desc}\n"
+                    f"玩家选择了自定义行动：{custom or '自行决定'}。\n"
+                    f"用JSON返回：{{\"narrative\":\"结果描述(30-40字)\",\"attr_change\":{{\"属性\":数值}}}}。属性限于体质/智力/颜值/快乐/家境。"
                 )
                 try:
-                    result = await self._get_response(prompt, user_msg, 0.9, 100)
+                    raw = await self._get_response(prompt, user_msg, 0.9, 150)
+                    result, custom_changes = self._parse_custom_result(raw, gs)
                 except Exception:
                     result = f"你在{gs.age}岁时做出了一个大胆的决定。"
+                    custom_changes = []
+                for change in custom_changes:
+                    attr_key = change["attr"]
+                    delta = change["delta"]
+                    if attr_key in gs.attrs:
+                        gs.attrs[attr_key] = max(1, min(10, gs.attrs[attr_key] + delta))
                 death_cause = await self._ai_check_death(gs, f"{evt.get('title', '')}：自定义行动 {custom or '自行决定'}")
                 if death_cause:
                     logger.info(f"[{pid}] AI judged death at age {gs.age}: {death_cause}")
                     return [f"⚡ {evt.get('title', '')}\n{result}\n💀 {death_cause}，享年{gs.age}岁"]
                 logger.info(f"[{pid}] Important event choice: custom at age {gs.age}")
-                return f"⚡ {evt.get('title', '')}\n{result}\n{self._attr_text(gs.attrs)}\n人生继续 →"
+                change_str = self._fmt_custom_changes(custom_changes)
+                return f"⚡ {evt.get('title', '')}\n{result}{change_str}\n{self._attr_text(gs.attrs)}\n人生继续 →"
             try:
                 idx = int(choice) - 1
                 if 0 <= idx < len(choices):
@@ -988,17 +1009,23 @@ class LifeSimPlugin(Star):
                     gs.important_choices.append({"age": gs.age, "event": evt.get("title", ""), "choice": choice_text, "risk": risk})
                     for attr, val in attr_change.items():
                         if attr in gs.attrs:
-                            gs.attrs[attr] += val
+                            gs.attrs[attr] = max(1, min(10, gs.attrs[attr] + val))
                     risk_outcome = ""
                     attr_names_risk = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
-                    if risk == "高" and random.random() < 0.4:
+                    if risk == "高" and random.random() < 0.55:
+                        penalties = random.sample(["体质", "智力", "颜值", "快乐", "家境"], random.randint(1, 2))
+                        for penalty_attr in penalties:
+                            penalty = random.randint(1, 3)
+                            gs.attrs[penalty_attr] = max(1, gs.attrs[penalty_attr] - penalty)
+                            risk_outcome += f"\n⚠️ {attr_names_risk[penalty_attr]}-{penalty}！"
+                    elif risk == "中" and random.random() < 0.35:
                         penalty_attr = random.choice(["体质", "智力", "颜值", "快乐", "家境"])
-                        penalty = random.randint(1, 3)
+                        penalty = random.randint(1, 2)
                         gs.attrs[penalty_attr] = max(1, gs.attrs[penalty_attr] - penalty)
                         risk_outcome = f"\n⚠️ {attr_names_risk[penalty_attr]}-{penalty}！"
-                    elif risk == "中" and random.random() < 0.2:
+                    elif risk == "中" and random.random() < 0.20:
                         bonus_attr = random.choice(["体质", "智力", "颜值", "快乐", "家境"])
-                        bonus = 1
+                        bonus = random.randint(1, 2)
                         gs.attrs[bonus_attr] = min(10, gs.attrs[bonus_attr] + bonus)
                         risk_outcome = f"\n🍀 {attr_names_risk[bonus_attr]}+{bonus}"
                     gs.current_important = {}
@@ -1030,17 +1057,29 @@ class LifeSimPlugin(Star):
                 gs.important_choices.append({"age": gs.age, "event": evt.get("title", ""), "choice": f"自定义: {custom_text}"})
                 gs.current_important = {}
                 gs.stage = "playing"
+                attr_desc = ", ".join(f"{k}={v}" for k, v in gs.attrs.items())
                 prompt = self._build_system_prompt(gs)
                 user_msg = (
-                    f"{gs.player_name}，{gs.age}岁，事件：{evt.get('title', '')}，"
-                    f"自定义行动：{custom_text}。用50字描述结果。"
+                    f"玩家{gs.player_name}在{gs.age}岁时发生了重要事件：{evt.get('title', '')}。\n"
+                    f"事件详情：{narrative}\n"
+                    f"当前属性：{attr_desc}\n"
+                    f"玩家选择了自定义行动：{custom_text}。\n"
+                    f"用JSON返回：{{\"narrative\":\"结果描述(30-40字)\",\"attr_change\":{{\"属性\":数值}}}}。属性限于体质/智力/颜值/快乐/家境。"
                 )
                 try:
-                    result = await self._get_response(prompt, user_msg, 0.9, 100)
+                    raw = await self._get_response(prompt, user_msg, 0.9, 150)
+                    result, custom_changes = self._parse_custom_result(raw, gs)
                 except Exception:
                     result = f"你做出了一个大胆的决定：{custom_text}"
+                    custom_changes = []
+                for change in custom_changes:
+                    attr_key = change["attr"]
+                    delta = change["delta"]
+                    if attr_key in gs.attrs:
+                        gs.attrs[attr_key] = max(1, min(10, gs.attrs[attr_key] + delta))
                 logger.info(f"[{pid}] Important event choice: custom({custom_text}) at age {gs.age}")
-                return f"⚡ {evt.get('title', '')}\n{result}\n{self._attr_text(gs.attrs)}\n人生继续 →"
+                change_str = self._fmt_custom_changes(custom_changes)
+                return f"⚡ {evt.get('title', '')}\n{result}{change_str}\n{self._attr_text(gs.attrs)}\n人生继续 →"
 
         if stage == "playing":
             return "人生继续 →"
@@ -1154,6 +1193,50 @@ class LifeSimPlugin(Star):
         if match:
             return int(match.group(1))
         return 0
+
+    def _parse_custom_result(self, raw: str, gs: GameState) -> tuple[str, list]:
+        import re
+        changes = []
+        narrative = raw
+        try:
+            clean = raw.strip()
+            if clean.startswith("```"):
+                clean = clean.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            start = clean.find("{")
+            end = clean.rfind("}") + 1
+            if start >= 0 and end > start:
+                parsed = json.loads(clean[start:end])
+                if isinstance(parsed, dict):
+                    narrative = parsed.get("narrative", raw[:60])
+                    ch = parsed.get("attr_change", {})
+                    ATTR_MAP = {
+                        "strength": "体质", "intelligence": "智力", "charisma": "颜值",
+                        "charm": "颜值", "luck": "家境", "fortune": "家境",
+                        "happy": "快乐", "happiness": "快乐", "joy": "快乐",
+                        "health": "体质", "constitution": "体质",
+                        "appearance": "颜值", "beauty": "颜值",
+                        "wealth": "家境", "money": "家境",
+                    }
+                    for k, v in ch.items():
+                        key = ATTR_MAP.get(k, k)
+                        if key in ("体质", "智力", "颜值", "快乐", "家境"):
+                            delta = int(v) if isinstance(v, (int, float)) else 0
+                            if delta != 0:
+                                changes.append({"attr": key, "delta": delta})
+        except Exception:
+            pass
+        return narrative, changes
+
+    def _fmt_custom_changes(self, changes: list) -> str:
+        if not changes:
+            return ""
+        parts = []
+        for c in changes:
+            attr = c["attr"]
+            delta = c["delta"]
+            sign = "+" if delta > 0 else ""
+            parts.append(f"{attr}{sign}{delta}")
+        return f"\n【{'，'.join(parts)}】"
 
     def _generate_simple_event(self, gs: GameState) -> str:
         events = [
