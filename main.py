@@ -174,10 +174,10 @@ def get_life_comment(grade: str, attrs: dict, alive_years: int) -> str:
         "F": "💀 短暂人生！你的生命过早地画上了句号，令人惋惜。"
     }
     comment = comments.get(grade, "")
-        best = max(attrs, key=attrs.get)
-        best_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
-        comment += f"\n你最突出的属性是{best_names.get(best, best)}（{attrs[best]}），享年{alive_years}岁。"
-        return comment
+    best = max(attrs, key=attrs.get)
+    best_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
+    comment += f"\n你最突出的属性是{best_names.get(best, best)}（{attrs[best]}），享年{alive_years}岁。"
+    return comment
 
 
 @dataclass

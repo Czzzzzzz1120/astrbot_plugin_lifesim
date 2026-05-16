@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-16
+
+### Added
+
+- 新增快乐和家境属性，属性系统扩展为 5 个：体质、智力、颜值、快乐、家境
+- 新增属性变化显示格式【属性+N】，更加直观清晰
+- 新增额外说明功能（如"讨喜"、"长痘了"、"累并幸福着"）
+
+### Changed
+
+- 重构属性系统：力量→体质，魅力→颜值，运气→家境
+- 重写每年输出样式为 `年龄岁：描述【属性变化】（额外说明）` 格式
+- 更新所有天赋和出身背景的属性加成
+- 更新属性影响命运的判定逻辑
+- 优化叙事风格为更简洁有趣的语言
+
+### Fixed
+
+- 修复属性计算相关的兼容性问题
+
 ## [1.2.0] - 2026-05-16
 
 ### Added
