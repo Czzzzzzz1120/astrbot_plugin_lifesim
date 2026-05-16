@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-05-16
+
+### Fixed
+
+- 修复 `_roll_attr_changes()` 在重要事件年份被提前执行导致属性静默变化
+- 优化属性→叙事流程：代码先随机属性变化，再将变化告知 AI，AI 围绕变化写一句叙事（避免矛盾）
+- 叙事更短更纯粹：AI 提示词 30 字内，max_tokens 降至 60
+
+### Changed
+
+- 有属性变化时：`{姓名}{年龄}岁。今年{体质+1，智力-1}。围绕这个变化写一句30字内叙事，不写【】`
+- 无属性变化时：`写一句{姓名}{年龄}岁时的生活片段，不超过30字`
+
 ## [1.6.0] - 2026-05-16
 
 ### Added

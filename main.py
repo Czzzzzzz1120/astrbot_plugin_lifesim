@@ -1099,8 +1099,6 @@ class LifeSimPlugin(Star):
             return await self._handle_death(pid, gs, f"{cause}去世，享年{gs.age}岁")
 
         attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
-        
-        attr_changes = self._roll_attr_changes(gs)
         extra_note = ""
 
         evt = gs.scheduled_events.get(gs.age)
@@ -1127,22 +1125,20 @@ class LifeSimPlugin(Star):
             lines.append("人生选择 <1/2/3> →")
             return ["\n".join(lines)]
 
+        attr_changes = self._roll_attr_changes(gs)
+
         if self.provider or self.client:
             prompt = self._build_system_prompt(gs)
-            recent = gs.events_history[-2:] if gs.events_history else []
-            recent_desc = "；".join(f"{e['age']}岁:{e['text'][:15]}" for e in recent) if recent else "暂无"
-            change_hint = ""
             if attr_changes:
-                change_hint = f"今年的变化：{'，'.join(attr_changes)}。"
-            user_msg = (
-                f"{gs.player_name}，{gs.age}岁。{change_hint}"
-                f"写一句今年发生的具体小事，不超过40字。"
-            )
+                change_desc = "，".join(attr_changes)
+                user_msg = f"{gs.player_name}{gs.age}岁。今年{change_desc}。围绕这个变化写一句30字内叙事，不写【】。"
+            else:
+                user_msg = f"写一句{gs.player_name}{gs.age}岁时的生活片段，不超过30字。"
             try:
-                narrative = await self._get_response(prompt, user_msg, 0.7, 80)
+                narrative = await self._get_response(prompt, user_msg, 0.7, 60)
                 narrative = narrative.strip()
-                if len(narrative) > 60:
-                    narrative = narrative[:60].rsplit("。", 1)[0] + "。"
+                if len(narrative) > 50:
+                    narrative = narrative[:50].rsplit("。", 1)[0] + "。"
             except Exception:
                 narrative = self._generate_simple_event(gs)
                 self._apply_random_attr_change(gs, attr_changes)
