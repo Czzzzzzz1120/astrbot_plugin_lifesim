@@ -18,36 +18,28 @@ logger = logging.getLogger("astrbot_plugin_lifesim")
 
 WORLDS = {
     "武侠江湖": {
-        "desc": "刀光剑影的江湖世界，以武为尊，门派林立",
-        "start": "你出生在一个动荡的武林世家，父亲曾是赫赫有名的剑客"
+        "desc": "刀光剑影的江湖世界，以武为尊，门派林立"
     },
     "都市白领": {
-        "desc": "现代都市的职场风云，从小职员到人生巅峰",
-        "start": "你出生在一个普通的城市家庭，父母都是工薪阶层"
+        "desc": "现代都市的职场风云，从小职员到人生巅峰"
     },
     "仙侠修真": {
-        "desc": "修仙问道的奇幻世界，追求长生不老",
-        "start": "你出生在修仙界的一个小村庄，天生灵根觉醒"
+        "desc": "修仙问道的奇幻世界，追求长生不老"
     },
     "末日生存": {
-        "desc": "文明崩塌后的废土世界，为了生存而战",
-        "start": "你出生在末日后的避难所，资源匮乏，危机四伏"
+        "desc": "文明崩塌后的废土世界，为了生存而战"
     },
     "古代宫廷": {
-        "desc": "波谲云诡的宫廷世界，权力与阴谋交织",
-        "start": "你出生在皇城根下的一个官宦之家"
+        "desc": "波谲云诡的宫廷世界，权力与阴谋交织"
     },
     "奇幻冒险": {
-        "desc": "充满魔法与怪物的奇幻大陆，勇者的传说",
-        "start": "你出生在一个宁静的小村庄，村外就是充满危险的黑暗森林"
+        "desc": "充满魔法与怪物的奇幻大陆，勇者的传说"
     },
     "赛博朋克": {
-        "desc": "高科技低生活的未来都市，霓虹灯下的暗影",
-        "start": "你出生在城市的底层区域，被电子垃圾和霓虹灯包围"
+        "desc": "高科技低生活的未来都市，霓虹灯下的暗影"
     },
     "海岛求生": {
-        "desc": "流落荒岛的原始生存，从零开始建设文明",
-        "start": "你在一次海难后醒来，发现自己被困在一个未知的热带岛屿上"
+        "desc": "流落荒岛的原始生存，从零开始建设文明"
     }
 }
 
@@ -152,24 +144,33 @@ def calc_score(attrs: dict, talents: list, important_choices: list, alive_years:
     year_score = alive_years * 0.5
     total = total_attrs + talent_score + choice_score + year_score
     grade = "F"
-    if total >= 150: grade = "SSS"
-    elif total >= 120: grade = "SS"
-    elif total >= 90: grade = "S"
-    elif total >= 70: grade = "A"
-    elif total >= 50: grade = "B"
-    elif total >= 35: grade = "C"
-    elif total >= 20: grade = "D"
+    if total >= 180: grade = "SSS"
+    elif total >= 145: grade = "SS"
+    elif total >= 110: grade = "S"
+    elif total >= 85: grade = "A"
+    elif total >= 60: grade = "B"
+    elif total >= 40: grade = "C"
+    elif total >= 25: grade = "D"
     return {"total": round(total), "grade": grade, "talent_score": talent_score, "choice_score": choice_score, "year_score": round(year_score, 1), "total_attrs": total_attrs}
+
+
+def _attr_bar(val: int) -> str:
+    bar_max = 20
+    if val <= bar_max:
+        return "▮" * val + "▯" * (bar_max - val)
+    return "▮" * bar_max + f" +{val - bar_max}"
 
 
 ATTR_LABEL = {"体质": ("💪", "体质"), "智力": ("🧠", "智力"), "颜值": ("✨", "颜值"), "快乐": ("😊", "快乐"), "家境": ("💰", "家境")}
 ATTR_COMMENT_HIGH = {"体质": "金刚不坏", "智力": "天才学霸", "颜值": "倾国倾城", "快乐": "人间开心果", "家境": "富可敌国"}
+ATTR_COMMENT_GOD = {"体质": "肉身成圣", "智力": "超凡入圣", "颜值": "绝世容颜", "快乐": "极乐逍遥", "家境": "富甲天下"}
 ATTR_COMMENT_OK = {"体质": "身体不错", "智力": "头脑灵光", "颜值": "略有姿色", "快乐": "知足常乐", "家境": "小康之家"}
 ATTR_COMMENT_MID = {"体质": "身子骨凑合", "智力": "普通人智商", "颜值": "路人脸", "快乐": "平平淡淡", "家境": "勉强温饱"}
 ATTR_COMMENT_LOW = {"体质": "体弱多病", "智力": "脑子不太灵", "颜值": "路人甲", "快乐": "苦大仇深", "家境": "一贫如洗"}
 
 
 def get_attr_comment(attr: str, val: int) -> str:
+    if val >= 15: return ATTR_COMMENT_GOD.get(attr, "逆天")
     if val >= 9: return ATTR_COMMENT_HIGH.get(attr, "逆天")
     if val >= 7: return ATTR_COMMENT_OK.get(attr, "还不错")
     if val >= 5: return ATTR_COMMENT_MID.get(attr, "凑合")
@@ -191,7 +192,7 @@ def get_life_report(score: dict, attrs: dict, talents: list, important_choices: 
     for attr in ("体质", "智力", "颜值", "快乐", "家境"):
         emoji, name = ATTR_LABEL.get(attr, ("", attr))
         val = attrs[attr]
-        bar = "▮" * val + "▯" * (10 - val)
+        bar = _attr_bar(val)
         comment = get_attr_comment(attr, val)
         lines.append(f"{emoji}{name}：{val} {bar} {comment}")
 
@@ -352,11 +353,8 @@ class LifeSimPlugin(Star):
         if attr not in gs.attrs:
             return 0
         old = gs.attrs[attr]
-        gs.attrs[attr] = max(1, min(10, old + delta))
+        gs.attrs[attr] = max(1, old + delta)
         return gs.attrs[attr] - old
-
-    def _attr_bar(self, val: int) -> str:
-        return "▮" * val + "▯" * (10 - val)
 
     async def _get_response(self, system: str, user: str, temperature: float = 0.85, max_tokens: int = 600) -> str:
         if self.provider:
@@ -922,7 +920,7 @@ class LifeSimPlugin(Star):
 
 
     def _fmt_attrs(self, attrs: dict, free_points: int = 0) -> str:
-        result = f"💪{attrs['体质']} 🧠{attrs['智力']} ✨{attrs['颜值']} 😊{attrs['快乐']} 💰{attrs['家境']}"
+        result = self._attr_text(attrs)
         if free_points > 0:
             result += f" | 余{free_points}点"
         return result
@@ -1236,33 +1234,6 @@ class LifeSimPlugin(Star):
         result_line = f" {gs.age}岁：{narrative} {attr_change_str}"
         return [result_line]
 
-    def _parse_ai_response(self, response: str) -> tuple[str, list]:
-        import re
-        attr_pattern = r"【([^】]+)】"
-        matches = re.findall(attr_pattern, response)
-        changes = []
-        for match in matches:
-            parts = re.split(r"[/,，、\s]+", match)
-            for part in parts:
-                part = part.strip()
-                if not part:
-                    continue
-                for attr_name in ["体质", "智力", "颜值", "快乐", "家境"]:
-                    if attr_name in part:
-                        delta = self._extract_delta(part)
-                        if delta != 0:
-                            changes.append({"attr": attr_name, "delta": delta})
-                        break
-        clean_text = re.sub(attr_pattern, "", response).strip()
-        return clean_text, changes[:2]
-
-    def _extract_delta(self, text: str) -> int:
-        import re
-        match = re.search(r"([+-]?\d+)", text)
-        if match:
-            return int(match.group(1))
-        return 0
-
     def _parse_custom_result(self, raw: str, gs: GameState) -> tuple[str, list]:
         import re
         changes = []
@@ -1325,20 +1296,40 @@ class LifeSimPlugin(Star):
         if age == 0:
             return changes, notes
 
+        talent_names = [t["name"] for t in gs.talents]
+        has_early = "早慧" in talent_names
+        has_late = "大器晚成" in talent_names
+
+        if has_late and age == 40:
+            for attr in list(gs.attrs.keys()):
+                old_val = gs.attrs[attr]
+                self._mod_attr(gs, attr, old_val)
+                changes.append(f"{attr}+{old_val}")
+            notes.append("大器晚成：属性翻倍！")
+
+        def boost(delta: int) -> int:
+            if not has_early or age >= 16:
+                return delta
+            if delta > 0:
+                return delta + max(1, delta // 2)
+            if delta < 0:
+                return delta - max(1, (-delta) // 2)
+            return delta
+
         roll = random.random()
         if age <= 12:
             if roll < 0.55:
-                self._do_change(gs, changes, random.choice(["体质", "智力", "快乐"]), random.randint(1, 2), notes)
+                self._do_change(gs, changes, random.choice(["体质", "智力", "快乐"]), boost(random.randint(1, 2)), notes)
             elif roll < 0.65:
                 for attr in random.sample(["体质", "智力", "快乐", "颜值"], 2):
-                    self._do_change(gs, changes, attr, 1, notes)
+                    self._do_change(gs, changes, attr, boost(1), notes)
         elif age <= 18:
             if roll < 0.50:
-                self._do_change(gs, changes, random.choice(["智力", "颜值", "快乐", "家境"]), random.randint(1, 2), notes)
+                self._do_change(gs, changes, random.choice(["智力", "颜值", "快乐", "家境"]), boost(random.randint(1, 2)), notes)
             elif roll < 0.62:
                 attrs = random.sample(["体质", "智力", "颜值", "快乐", "家境"], 2)
                 for attr in attrs:
-                    self._do_change(gs, changes, attr, random.choice([-1, 1, 1]), notes)
+                    self._do_change(gs, changes, attr, boost(random.choice([-1, 1, 1])), notes)
         elif age <= 30:
             if roll < 0.55:
                 choices = ["体质", "快乐", "家境", "颜值"]
@@ -1369,9 +1360,8 @@ class LifeSimPlugin(Star):
         if actual != 0:
             sign = "+" if actual > 0 else ""
             changes.append(f"{attr}{sign}{actual}")
-        elif delta != 0 and notes is not None:
-            direction = "已达上限" if delta > 0 else "已达下限"
-            notes.append(f"{attr}{direction}")
+        elif delta < 0 and notes is not None:
+            notes.append(f"{attr}已达下限")
 
     def _apply_random_attr_change(self, gs: GameState, attr_changes: list, positive: bool = True):
         keys = list(gs.attrs.keys())
@@ -1383,8 +1373,6 @@ class LifeSimPlugin(Star):
                 sign = "+" if actual > 0 else ""
                 attr_changes.append(f"{attr_key}{sign}{actual}")
                 return
-        direction = "已达上限" if positive else "已达下限"
-        attr_changes.append(f"属性均{direction}")
 
     async def _handle_death(self, pid: str, gs: GameState, cause: str) -> list:
         gs.alive = False

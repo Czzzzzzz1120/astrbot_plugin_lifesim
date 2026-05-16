@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-05-16
+
+### Changed
+
+- **属性上限移除**：属性不再有 10 点上限，仅保留 1 点下限，`_mod_attr` 从 `max(1, min(10, ...))` 改为 `max(1, ...)`
+- **属性进度条适配**：`_attr_bar` 支持无限属性，≤20 显示完整进度条，>20 显示 `▮×20 +溢出值`
+- **评价系统适配**：新增 ≥15「超凡入圣」等级评语；评分等级阈值整体上调约 20%（SSS≥180/SS≥145/S≥110...）
+- **天赋系统激活**：`早慧`（16岁前成长+50%）和 `大器晚成`（40岁时属性翻倍）现在实际生效
+- `_fmt_attrs` 合并到 `_attr_text`，消除重复代码
+
+### Removed
+
+- 删除死代码 `_parse_ai_response`、`_extract_delta`（AI 不再写【】，旧解析器无调用）
+- 删除 `WORLDS` 中从未使用的 `"start"` 字段（8 个世界观各减少一行）
+- 移除 `_do_change` 和 `_apply_random_attr_change` 中不可能触发的"已达上限"分支
+
 ## [1.7.1] - 2026-05-16
 
 ### Fixed
