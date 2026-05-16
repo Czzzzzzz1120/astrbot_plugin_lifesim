@@ -234,7 +234,7 @@ def generate_scheduled_events(max_age: int) -> dict:
     return scheduled
 
 
-QQ_MSG_LIMIT = 800
+QQ_MSG_LIMIT = 1500
 GAME_TIMEOUT = 300
 AUTO_ADVANCE_STEPS = 5
 
@@ -327,7 +327,7 @@ class LifeSimPlugin(Star):
             f"你是一个人生模拟游戏的叙述者，世界观：{gs.world}，"
             f"玩家角色名{gs.player_name}，身份{gs.identity.get('name', '普通人')}，性别{gs.gender}，"
             f"天赋：{', '.join(talent_names) or '无'}。"
-            f"用第二人称'你'来叙述。每次回复严格控制在50字以内，只写核心剧情，不写多余修饰。"
+            f"用第二人称'你'来叙述。每次回复控制在80-120字，写出生动的剧情描写，包含具体的场景、人物互动和内心感受。"
             f"属性会影响命运：力量低则体弱多灾，智力低则决策失误，魅力低则孤立无援，运气低则厄运频发。"
             f"所有情节必须与世界观、过往经历保持连贯。"
         )
@@ -660,10 +660,10 @@ class LifeSimPlugin(Star):
                     prompt = self._build_system_prompt(gs)
                     user_msg = (
                         f"{gs.player_name}，1岁，{gs.world}。"
-                        f"用30-50字描述出生场景。"
+                        f"用80-120字描述出生场景，包含具体的环境描写、家人的反应和氛围渲染。"
                     )
                     try:
-                        narrative = await self._get_response(prompt, user_msg, 0.9, 150)
+                        narrative = await self._get_response(prompt, user_msg, 0.9, 200)
                     except Exception:
                         narrative = "你开始了新的人生。"
                 else:
@@ -776,14 +776,14 @@ class LifeSimPlugin(Star):
             return fallback
         prompt = (
             "你是人生模拟游戏编剧。生成事件场景和3个选项。\n\n"
-            "【场景描述】30-50字，基于事件标题和角色处境，与近期经历有因果关系。\n\n"
+            "【场景描述】80-120字，基于事件标题和角色处境，与近期经历有因果关系。包含具体的场景描写、人物互动和氛围渲染。\n\n"
             "【选项要求】\n"
             "- 低风险：稳定+2点，8-12字\n"
             "- 中风险：+2-3点，20%额外奖励，8-12字\n"
             "- 高风险：+3-4点，40%惩罚，8-12字（可能导致严重后果）\n"
             "- 属性：strength/intelligence/charisma/luck\n\n"
             "严格JSON输出：\n"
-            '{"event_narrative":"场景(30-50字)","choices":[{"text":"行动(8-12字)","risk":"低","attr_change":{"属性":2}},{"text":"...","risk":"中","attr_change":{...}},{"text":"...","risk":"高","attr_change":{...}}]}'
+            '{"event_narrative":"场景(80-120字)","choices":[{"text":"行动(8-12字)","risk":"低","attr_change":{"属性":2}},{"text":"...","risk":"中","attr_change":{...}},{"text":"...","risk":"高","attr_change":{...}}]}'
         )
         recent_events = gs.events_history[-3:] if gs.events_history else []
         recent_desc = "；".join(f"{e['age']}岁:{e.get('text', '')[:40]}" for e in recent_events) if recent_events else "暂无"
@@ -900,9 +900,9 @@ class LifeSimPlugin(Star):
             origin_desc = gs.identity["desc"]
             try:
                 origin_desc = await self._get_response(
-                    "你是一个人生模拟游戏的叙述者。根据世界观和出身类型，用一句话（30-60字）描述角色的出身背景，语言简洁生动。",
+                    "你是一个人生模拟游戏的叙述者。根据世界观和出身类型，用80-120字描述角色的出身背景，包含具体的场景描写、家庭环境和童年氛围。",
                     f"世界观：{gs.world}\n角色名：{gs.player_name}\n性别：{gs.gender}\n出身类型：{gs.identity['name']}（{gs.identity['desc']}）",
-                    0.9, 100
+                    0.9, 200
                 )
                 origin_desc = origin_desc.strip()
             except Exception:
@@ -968,7 +968,7 @@ class LifeSimPlugin(Star):
                 user_msg = (
                     f"玩家{gs.player_name}在{gs.age}岁时发生了重要事件：{evt.get('title', '')}，"
                     f"事件详情：{narrative}，玩家选择了自定义行动：{custom or '自行决定'}。"
-                    f"请描述结果和对属性的影响（50-150字）。"
+                    f"用80-120字描述结果，包含具体的场景描写、人物反应和内心感受。"
                 )
                 try:
                     result = await self._get_response(prompt, user_msg, 0.9, 150)
@@ -1008,10 +1008,10 @@ class LifeSimPlugin(Star):
                     prompt = self._build_system_prompt(gs)
                     user_msg = (
                         f"{gs.player_name}，{gs.age}岁，事件：{evt.get('title', '')}，"
-                        f"选择了：{choice_text}（{risk}风险）。用30-50字描述结果。"
+                        f"选择了：{choice_text}（{risk}风险）。用80-120字描述结果，包含具体的场景描写和人物反应。"
                     )
                     try:
-                        result = await self._get_response(prompt, user_msg, 0.9, 150)
+                        result = await self._get_response(prompt, user_msg, 0.9, 200)
                     except Exception:
                         result = f"你选择了{choice_text}。"
                     death_cause = await self._ai_check_death(gs, f"{evt.get('title', '')}：{choice_text}（{risk}风险）")
@@ -1035,10 +1035,10 @@ class LifeSimPlugin(Star):
                 prompt = self._build_system_prompt(gs)
                 user_msg = (
                     f"{gs.player_name}，{gs.age}岁，事件：{evt.get('title', '')}，"
-                    f"自定义行动：{custom_text}。用30-50字描述结果。"
+                    f"自定义行动：{custom_text}。用80-120字描述结果，包含具体的场景描写和人物反应。"
                 )
                 try:
-                    result = await self._get_response(prompt, user_msg, 0.9, 150)
+                    result = await self._get_response(prompt, user_msg, 0.9, 200)
                 except Exception:
                     result = f"你做出了一个大胆的决定：{custom_text}"
                 logger.info(f"[{pid}] Important event choice: custom({custom_text}) at age {gs.age}")
@@ -1128,10 +1128,10 @@ class LifeSimPlugin(Star):
                 f"状态：{attr_hint or '正常'}\n"
                 f"近况：{recent_desc}\n"
                 f"上次抉择：{important_desc}\n"
-                f"用30-50字描述这一年，融入属性状态影响。"
+                f"用80-120字描述这一年的经历，包含具体的场景描写、与他人的互动、内心的感受变化。让故事生动有画面感。"
             )
             try:
-                narrative = await self._get_response(prompt, user_msg, 0.9, 150)
+                narrative = await self._get_response(prompt, user_msg, 0.9, 200)
             except Exception:
                 narrative = f"{gs.age}岁，生活继续..."
         else:
@@ -1176,10 +1176,10 @@ class LifeSimPlugin(Star):
                 f"玩家{gs.player_name}在{gs.age}岁时{cause}。身份：{gs.identity.get('name', '')}，"
                 f"天赋：{', '.join(t['name'] for t in gs.talents) or '无'}，"
                 f"关键事件：{'; '.join(summary_events)}。"
-                f"请写一段50-100字的人生总结。"
+                f"用150-200字写一段人生总结，回顾角色的一生，包含主要成就、遗憾和对后人的启示。"
             )
             try:
-                eulogy = await self._get_response(prompt, user_msg, 0.9, 200)
+                eulogy = await self._get_response(prompt, user_msg, 0.9, 300)
             except Exception:
                 pass
 
