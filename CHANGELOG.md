@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-05-16
+
+### Changed
+
+- **重大重构**：叙事策略改为「代码预决定属性变化 → AI 围绕变化写一句叙事」
+  - 新增 `_roll_attr_changes()` 按年龄段智能决定属性变化（概率、幅度、正负）
+  - 新增 `_do_change()` 统一应用属性变化并生成格式字符串
+  - AI 不再负责决定属性和生成【】，只写一句 ≤40 字的生活片段
+- 系统提示词大幅精简：「只写一句话，不超过40字。简洁、有趣、像生活片段」
+- 所有场景 length 再次缩短：出生 30-40、背景 30-40、事件场景 30-40、人生总结 50-70
+- 年度叙事 max_tokens 降至 80，事件结果降至 80
+
+### Fixed
+
+- 属性变化 100% 真实有效（代码直接修改 `gs.attrs`，不再依赖 AI 解析）
+- 【】内容始终与属性实际变化一致
+
+## [1.4.1] - 2026-05-16
+
+### Fixed
+
+- 修复【】内属性变化不生效：`_parse_ai_response` 现在支持 `，` `、` `/` 等多种分隔符
+- 修复重要事件选择后属性变化无法继承：risk_outcome 中的旧属性名导致 KeyError
+- 修复 `_generate_event_content` 校验逻辑仍用旧属性名
+
+### Changed
+
+- 全面缩短所有 AI 生成内容长度：叙事 30-50 字、事件 50 字、出生场景 50-70 字、人生总结 80-120 字
+- 简化所有提示词，删除冗余描述，让 AI 生成更精准的精简内容
+- 系统提示词中直接指导属性变化格式：【体质+1】或【体质-1，智力+1】
+
 ## [1.4.0] - 2026-05-16
 
 ### Added

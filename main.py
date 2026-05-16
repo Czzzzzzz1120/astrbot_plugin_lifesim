@@ -324,12 +324,10 @@ class LifeSimPlugin(Star):
     def _build_system_prompt(self, gs: GameState) -> str:
         talent_names = [t["name"] for t in gs.talents]
         return (
-            f"你是一个人生模拟游戏的叙述者，世界观：{gs.world}，"
-            f"玩家角色名{gs.player_name}，身份{gs.identity.get('name', '普通人')}，性别{gs.gender}，"
+            f"人生模拟游戏。世界观：{gs.world}。玩家{gs.player_name}，{gs.identity.get('name', '普通人')}，{gs.gender}。"
             f"天赋：{', '.join(talent_names) or '无'}。"
-            f"用第二人称'你'来叙述。每次回复控制在80-120字，写出生动的剧情描写，包含具体的场景、人物互动和内心感受。"
-            f"属性会影响命运：力量低则体弱多灾，智力低则决策失误，魅力低则孤立无援，运气低则厄运频发。"
-            f"所有情节必须与世界观、过往经历保持连贯。"
+            f"用'你'叙述。只写一句话，不超过40字。简洁、有趣、像生活片段。不写【】。"
+            f"情节与世界观、过往保持连贯。"
         )
 
     def _is_group(self, event: AstrMessageEvent) -> bool:
@@ -660,10 +658,10 @@ class LifeSimPlugin(Star):
                     prompt = self._build_system_prompt(gs)
                     user_msg = (
                         f"{gs.player_name}，1岁，{gs.world}。"
-                        f"用80-120字描述出生场景，包含具体的环境描写、家人的反应和氛围渲染。"
+                        f"用30-40字描述出生场景。"
                     )
                     try:
-                        narrative = await self._get_response(prompt, user_msg, 0.9, 200)
+                        narrative = await self._get_response(prompt, user_msg, 0.9, 80)
                     except Exception:
                         narrative = "你开始了新的人生。"
                 else:
@@ -776,14 +774,14 @@ class LifeSimPlugin(Star):
             return fallback
         prompt = (
             "你是人生模拟游戏编剧。生成事件场景和3个选项。\n\n"
-            "【场景描述】80-120字，基于事件标题和角色处境，与近期经历有因果关系。包含具体的场景描写、人物互动和氛围渲染。\n\n"
+            "【场景描述】30-40字，基于事件标题和角色处境。\n\n"
             "【选项要求】\n"
             "- 低风险：稳定+2点，8-12字\n"
             "- 中风险：+2-3点，20%额外奖励，8-12字\n"
             "- 高风险：+3-4点，40%惩罚，8-12字（可能导致严重后果）\n"
             "- 属性：体质/智力/颜值/快乐/家境\n\n"
             "严格JSON输出：\n"
-            '{"event_narrative":"场景(80-120字)","choices":[{"text":"行动(8-12字)","risk":"低","attr_change":{"属性":2}},{"text":"...","risk":"中","attr_change":{...}},{"text":"...","risk":"高","attr_change":{...}}]}'
+            '{"event_narrative":"场景(30-40字)","choices":[{"text":"行动(8-12字)","risk":"低","attr_change":{"属性":2}},{"text":"...","risk":"中","attr_change":{...}},{"text":"...","risk":"高","attr_change":{...}}]}'
         )
         recent_events = gs.events_history[-3:] if gs.events_history else []
         recent_desc = "；".join(f"{e['age']}岁:{e.get('text', '')[:40]}" for e in recent_events) if recent_events else "暂无"
@@ -822,7 +820,7 @@ class LifeSimPlugin(Star):
                             if ch["risk"] not in ("低", "中", "高"):
                                 ch["risk"] = "中"
                             for k in list(ch["attr_change"].keys()):
-                                if k not in ("strength", "intelligence", "charisma", "luck"):
+                                if k not in ("体质", "智力", "颜值", "快乐", "家境"):
                                     del ch["attr_change"][k]
                             if ch["attr_change"]:
                                 result.append(ch)
@@ -900,9 +898,9 @@ class LifeSimPlugin(Star):
             origin_desc = gs.identity["desc"]
             try:
                 origin_desc = await self._get_response(
-                    "你是一个人生模拟游戏的叙述者。根据世界观和出身类型，用80-120字描述角色的出身背景，包含具体的场景描写、家庭环境和童年氛围。",
+                    "你是一个人生模拟游戏的叙述者。根据世界观和出身类型，用30-40字描述角色的出身背景。",
                     f"世界观：{gs.world}\n角色名：{gs.player_name}\n性别：{gs.gender}\n出身类型：{gs.identity['name']}（{gs.identity['desc']}）",
-                    0.9, 200
+                    0.9, 80
                 )
                 origin_desc = origin_desc.strip()
             except Exception:
@@ -949,11 +947,11 @@ class LifeSimPlugin(Star):
             return (
                 f"⭐ {names}\n"
                 f"📊 自由加点 +10\n{self._fmt_attrs(gs.attrs, gs.free_points)}\n"
-                f"人生加点 力量 3 智力 2 / 6 9 9 6 / 随机 / 完成"
+                f"人生加点 体质 3 智力 2 / 8 8 8 8 8 / 随机 / 完成"
             )
 
         if stage == "allocate_points":
-            return f"⏳ 请使用 人生加点 分配属性\n人生加点 力量 3 智力 2\n人生加点 6 9 9 6\n人生加点 随机\n人生加点 完成"
+            return f"⏳ 请使用 人生加点 分配属性\n人生加点 体质 3 智力 2\n人生加点 8 8 8 8 8\n人生加点 随机\n人生加点 完成"
 
         if stage == "important_event":
             evt = gs.current_important
@@ -968,10 +966,10 @@ class LifeSimPlugin(Star):
                 user_msg = (
                     f"玩家{gs.player_name}在{gs.age}岁时发生了重要事件：{evt.get('title', '')}，"
                     f"事件详情：{narrative}，玩家选择了自定义行动：{custom or '自行决定'}。"
-                    f"用80-120字描述结果，包含具体的场景描写、人物反应和内心感受。"
+                    f"用50字描述结果。"
                 )
                 try:
-                    result = await self._get_response(prompt, user_msg, 0.9, 150)
+                    result = await self._get_response(prompt, user_msg, 0.9, 100)
                 except Exception:
                     result = f"你在{gs.age}岁时做出了一个大胆的决定。"
                 death_cause = await self._ai_check_death(gs, f"{evt.get('title', '')}：自定义行动 {custom or '自行决定'}")
@@ -992,26 +990,26 @@ class LifeSimPlugin(Star):
                         if attr in gs.attrs:
                             gs.attrs[attr] += val
                     risk_outcome = ""
-                    attr_names = {"strength": "力量", "intelligence": "智力", "charisma": "魅力", "luck": "运气"}
+                    attr_names_risk = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
                     if risk == "高" and random.random() < 0.4:
-                        penalty_attr = random.choice(["strength", "intelligence", "charisma", "luck"])
+                        penalty_attr = random.choice(["体质", "智力", "颜值", "快乐", "家境"])
                         penalty = random.randint(1, 3)
-                        gs.attrs[penalty_attr] -= penalty
-                        risk_outcome = f"\n⚠️ {attr_names[penalty_attr]}-{penalty}！"
+                        gs.attrs[penalty_attr] = max(1, gs.attrs[penalty_attr] - penalty)
+                        risk_outcome = f"\n⚠️ {attr_names_risk[penalty_attr]}-{penalty}！"
                     elif risk == "中" and random.random() < 0.2:
-                        bonus_attr = random.choice(["strength", "intelligence", "charisma", "luck"])
+                        bonus_attr = random.choice(["体质", "智力", "颜值", "快乐", "家境"])
                         bonus = 1
-                        gs.attrs[bonus_attr] += bonus
-                        risk_outcome = f"\n🍀 {attr_names[bonus_attr]}+{bonus}"
+                        gs.attrs[bonus_attr] = min(10, gs.attrs[bonus_attr] + bonus)
+                        risk_outcome = f"\n🍀 {attr_names_risk[bonus_attr]}+{bonus}"
                     gs.current_important = {}
                     gs.stage = "playing"
                     prompt = self._build_system_prompt(gs)
                     user_msg = (
                         f"{gs.player_name}，{gs.age}岁，事件：{evt.get('title', '')}，"
-                        f"选择了：{choice_text}（{risk}风险）。用80-120字描述结果，包含具体的场景描写和人物反应。"
+                        f"选择了：{choice_text}（{risk}风险）。用50字描述结果。"
                     )
                     try:
-                        result = await self._get_response(prompt, user_msg, 0.9, 200)
+                        result = await self._get_response(prompt, user_msg, 0.9, 80)
                     except Exception:
                         result = f"你选择了{choice_text}。"
                     death_cause = await self._ai_check_death(gs, f"{evt.get('title', '')}：{choice_text}（{risk}风险）")
@@ -1035,10 +1033,10 @@ class LifeSimPlugin(Star):
                 prompt = self._build_system_prompt(gs)
                 user_msg = (
                     f"{gs.player_name}，{gs.age}岁，事件：{evt.get('title', '')}，"
-                    f"自定义行动：{custom_text}。用80-120字描述结果，包含具体的场景描写和人物反应。"
+                    f"自定义行动：{custom_text}。用50字描述结果。"
                 )
                 try:
-                    result = await self._get_response(prompt, user_msg, 0.9, 200)
+                    result = await self._get_response(prompt, user_msg, 0.9, 100)
                 except Exception:
                     result = f"你做出了一个大胆的决定：{custom_text}"
                 logger.info(f"[{pid}] Important event choice: custom({custom_text}) at age {gs.age}")
@@ -1063,7 +1061,7 @@ class LifeSimPlugin(Star):
 
         attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
         
-        attr_changes = []
+        attr_changes = self._roll_attr_changes(gs)
         extra_note = ""
 
         evt = gs.scheduled_events.get(gs.age)
@@ -1094,31 +1092,26 @@ class LifeSimPlugin(Star):
             prompt = self._build_system_prompt(gs)
             recent = gs.events_history[-2:] if gs.events_history else []
             recent_desc = "；".join(f"{e['age']}岁:{e['text'][:15]}" for e in recent) if recent else "暂无"
-            important_desc = "无"
-            if gs.important_choices:
-                last_important = gs.important_choices[-1]
-                important_desc = f"{last_important['age']}岁{last_important['event']}→{last_important['choice'][:10]}"
+            change_hint = ""
+            if attr_changes:
+                change_hint = f"今年的变化：{'，'.join(attr_changes)}。"
             user_msg = (
-                f"{gs.player_name}，{gs.age}岁，{gs.world}。\n"
-                f"近况：{recent_desc}\n"
-                f"写一段简短有趣的年度经历，30-50字。包含具体小事和内心感受。\n"
-                f"如果这一年有属性变化，在描述后用【体质±N/智力±N/颜值±N/快乐±N/家境±N】格式标注，最多2个属性变化。"
+                f"{gs.player_name}，{gs.age}岁。{change_hint}"
+                f"写一句今年发生的具体小事，不超过40字。"
             )
             try:
-                response = await self._get_response(prompt, user_msg, 0.8, 150)
-                narrative, changes = self._parse_ai_response(response)
-                for change in changes:
-                    attr_key = change["attr"]
-                    delta = change["delta"]
-                    if attr_key in gs.attrs:
-                        gs.attrs[attr_key] = max(1, min(10, gs.attrs[attr_key] + delta))
-                        sign = "+" if delta > 0 else ""
-                        attr_changes.append(f"{attr_key}{sign}{delta}")
+                narrative = await self._get_response(prompt, user_msg, 0.7, 80)
+                narrative = narrative.strip()
+                if len(narrative) > 60:
+                    narrative = narrative[:60].rsplit("。", 1)[0] + "。"
             except Exception:
                 narrative = self._generate_simple_event(gs)
                 self._apply_random_attr_change(gs, attr_changes)
         else:
             narrative = self._generate_simple_event(gs)
+            self._apply_random_attr_change(gs, attr_changes)
+
+        if not attr_changes:
             self._apply_random_attr_change(gs, attr_changes)
 
         gs.events_history.append({"age": gs.age, "text": narrative})
@@ -1141,30 +1134,17 @@ class LifeSimPlugin(Star):
         matches = re.findall(attr_pattern, response)
         changes = []
         for match in matches:
-            parts = match.split("/")
+            parts = re.split(r"[/,，、\s]+", match)
             for part in parts:
                 part = part.strip()
-                if "体质" in part:
-                    delta = self._extract_delta(part)
-                    if delta != 0:
-                        changes.append({"attr": "体质", "delta": delta})
-                elif "智力" in part:
-                    delta = self._extract_delta(part)
-                    if delta != 0:
-                        changes.append({"attr": "智力", "delta": delta})
-                elif "颜值" in part:
-                    delta = self._extract_delta(part)
-                    if delta != 0:
-                        changes.append({"attr": "颜值", "delta": delta})
-                elif "快乐" in part:
-                    delta = self._extract_delta(part)
-                    if delta != 0:
-                        changes.append({"attr": "快乐", "delta": delta})
-                elif "家境" in part:
-                    delta = self._extract_delta(part)
-                    if delta != 0:
-                        changes.append({"attr": "家境", "delta": delta})
-        
+                if not part:
+                    continue
+                for attr_name in ["体质", "智力", "颜值", "快乐", "家境"]:
+                    if attr_name in part:
+                        delta = self._extract_delta(part)
+                        if delta != 0:
+                            changes.append({"attr": attr_name, "delta": delta})
+                        break
         clean_text = re.sub(attr_pattern, "", response).strip()
         return clean_text, changes[:2]
 
@@ -1184,6 +1164,60 @@ class LifeSimPlugin(Star):
             "你继续着日常的生活。",
         ]
         return random.choice(events)
+
+    def _roll_attr_changes(self, gs: GameState) -> list:
+        changes = []
+        age = gs.age
+
+        if age == 0:
+            return changes
+
+        roll = random.random()
+        if age <= 12:
+            if roll < 0.55:
+                self._do_change(gs, changes, random.choice(["体质", "智力", "快乐"]), random.randint(1, 2))
+            elif roll < 0.65:
+                for attr in random.sample(["体质", "智力", "快乐", "颜值"], 2):
+                    self._do_change(gs, changes, attr, 1)
+        elif age <= 18:
+            if roll < 0.50:
+                self._do_change(gs, changes, random.choice(["智力", "颜值", "快乐", "家境"]), random.randint(1, 2))
+            elif roll < 0.62:
+                attrs = random.sample(["体质", "智力", "颜值", "快乐", "家境"], 2)
+                for attr in attrs:
+                    self._do_change(gs, changes, attr, random.choice([-1, 1, 1]))
+        elif age <= 30:
+            if roll < 0.55:
+                choices = ["体质", "快乐", "家境", "颜值"]
+                self._do_change(gs, changes, random.choice(choices), random.choice([-2, -1, 1, 1, 2]))
+            elif roll < 0.70:
+                attrs = random.sample(["体质", "智力", "颜值", "快乐", "家境"], 2)
+                for attr in attrs:
+                    self._do_change(gs, changes, attr, random.choice([-2, -1, 1, 2]))
+        elif age <= 50:
+            if roll < 0.50:
+                self._do_change(gs, changes, random.choice(["体质", "智力", "家境", "快乐"]), random.choice([-2, -1, 1, 1, 2]))
+            elif roll < 0.65:
+                attrs = random.sample(["体质", "智力", "颜值", "快乐", "家境"], 2)
+                for attr in attrs:
+                    self._do_change(gs, changes, attr, random.choice([-2, -1, 1]))
+        else:
+            if roll < 0.45:
+                self._do_change(gs, changes, random.choice(["体质", "快乐", "颜值", "家境"]), random.choice([-2, -1, 1]))
+            elif roll < 0.58:
+                attrs = random.sample(["体质", "智力", "颜值", "快乐", "家境"], 2)
+                for attr in attrs:
+                    self._do_change(gs, changes, attr, random.choice([-2, -1, 1]))
+
+        return changes
+
+    def _do_change(self, gs: GameState, changes: list, attr: str, delta: int):
+        old = gs.attrs[attr]
+        gs.attrs[attr] = max(1, min(10, old + delta))
+        actual = gs.attrs[attr] - old
+        if actual != 0:
+            sign = "+" if actual > 0 else ""
+            changes.append(f"{attr}{sign}{actual}")
 
     def _apply_random_attr_change(self, gs: GameState, attr_changes: list, positive: bool = True):
         attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
@@ -1212,10 +1246,10 @@ class LifeSimPlugin(Star):
                 f"玩家{gs.player_name}在{gs.age}岁时{cause}。身份：{gs.identity.get('name', '')}，"
                 f"天赋：{', '.join(t['name'] for t in gs.talents) or '无'}，"
                 f"关键事件：{'; '.join(summary_events)}。"
-                f"用150-200字写一段人生总结，回顾角色的一生，包含主要成就、遗憾和对后人的启示。"
+                f"用50-70字写一段人生总结，回顾角色的一生，包含主要成就、遗憾和对后人的启示。"
             )
             try:
-                eulogy = await self._get_response(prompt, user_msg, 0.9, 300)
+                eulogy = await self._get_response(prompt, user_msg, 0.9, 120)
             except Exception:
                 pass
 
