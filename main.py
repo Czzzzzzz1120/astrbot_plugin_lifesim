@@ -1062,25 +1062,9 @@ class LifeSimPlugin(Star):
             return await self._handle_death(pid, gs, f"{cause}去世，享年{gs.age}岁")
 
         attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
-        attr_emojis = {"体质": "💪", "智力": "🧠", "颜值": "✨", "快乐": "😊", "家境": "💰"}
         
         attr_changes = []
         extra_note = ""
-
-        if gs.attrs["家境"] <= 3 and random.random() < 0.3:
-            penalty_attr = random.choice(["体质", "智力", "颜值"])
-            penalty = random.randint(1, 2)
-            gs.attrs[penalty_attr] -= penalty
-            attr_changes.append(f"{attr_names[penalty_attr]}-{penalty}")
-            extra_note = "（缺钱）"
-        elif gs.attrs["体质"] <= 3 and random.random() < 0.25:
-            gs.attrs["体质"] -= 1
-            attr_changes.append("体质-1")
-            extra_note = "（体弱多病）"
-        elif gs.attrs["颜值"] <= 3 and random.random() < 0.2:
-            gs.attrs["颜值"] -= 1
-            attr_changes.append("颜值-1")
-            extra_note = "（遭人排挤）"
 
         evt = gs.scheduled_events.get(gs.age)
         if evt and gs.age not in [c.get("age") for c in gs.important_choices if "age" in c]:
@@ -1106,51 +1090,36 @@ class LifeSimPlugin(Star):
             lines.append("人生选择 <1/2/3> →")
             return ["\n".join(lines)]
 
-        attr_hint = ""
-        if gs.attrs["体质"] <= 3:
-            attr_hint += "体弱，"
-        if gs.attrs["智力"] <= 3:
-            attr_hint += "愚钝，"
-        if gs.attrs["颜值"] <= 3:
-            attr_hint += "孤僻，"
-        if gs.attrs["家境"] <= 3:
-            attr_hint += "贫困，"
-        if gs.attrs["体质"] >= 9:
-            attr_hint += "体魄强健，"
-        if gs.attrs["家境"] >= 9:
-            attr_hint += "家境优渥，"
-
         if self.provider or self.client:
             prompt = self._build_system_prompt(gs)
-            recent = gs.events_history[-3:] if gs.events_history else []
-            recent_desc = "；".join(f"{e['age']}岁:{e['text'][:20]}" for e in recent) if recent else "暂无"
+            recent = gs.events_history[-2:] if gs.events_history else []
+            recent_desc = "；".join(f"{e['age']}岁:{e['text'][:15]}" for e in recent) if recent else "暂无"
             important_desc = "无"
             if gs.important_choices:
                 last_important = gs.important_choices[-1]
-                important_desc = f"{last_important['age']}岁{last_important['event']}→{last_important['choice'][:15]}"
+                important_desc = f"{last_important['age']}岁{last_important['event']}→{last_important['choice'][:10]}"
             user_msg = (
                 f"{gs.player_name}，{gs.age}岁，{gs.world}。\n"
-                f"属性：{attr_emojis['体质']}{gs.attrs['体质']}{attr_emojis['智力']}{gs.attrs['智力']}{attr_emojis['颜值']}{gs.attrs['颜值']}{attr_emojis['快乐']}{gs.attrs['快乐']}{attr_emojis['家境']}{gs.attrs['家境']}\n"
-                f"状态：{attr_hint or '正常'}\n"
                 f"近况：{recent_desc}\n"
-                f"上次抉择：{important_desc}\n"
-                f"用简洁有趣的语言描述这一年的经历，包含具体的场景描写、与他人的互动、内心的感受变化。60-80字左右。"
+                f"写一段简短有趣的年度经历，30-50字。包含具体小事和内心感受。\n"
+                f"如果这一年有属性变化，在描述后用【体质±N/智力±N/颜值±N/快乐±N/家境±N】格式标注，最多2个属性变化。"
             )
             try:
-                narrative = await self._get_response(prompt, user_msg, 0.9, 150)
+                response = await self._get_response(prompt, user_msg, 0.8, 150)
+                narrative, changes = self._parse_ai_response(response)
+                for change in changes:
+                    attr_key = change["attr"]
+                    delta = change["delta"]
+                    if attr_key in gs.attrs:
+                        gs.attrs[attr_key] = max(1, min(10, gs.attrs[attr_key] + delta))
+                        sign = "+" if delta > 0 else ""
+                        attr_changes.append(f"{attr_key}{sign}{delta}")
             except Exception:
-                narrative = f"这一年平平淡淡地过去了。"
+                narrative = self._generate_simple_event(gs)
+                self._apply_random_attr_change(gs, attr_changes)
         else:
-            narrative = f"这一年平平淡淡地过去了。"
-
-        if gs.age % 5 == 0 or random.random() < 0.3:
-            if random.random() < 0.5:
-                attr_key = random.choice(list(gs.attrs.keys()))
-                gs.attrs[attr_key] += 1
-                attr_changes.append(f"{attr_names[attr_key]}+1")
-                notes = ["（天赋觉醒）", "（运气不错）", "（有所成长）", "（意外收获）", "（努力有回报）", "（贵人相助）"]
-                if not extra_note:
-                    extra_note = random.choice(notes)
+            narrative = self._generate_simple_event(gs)
+            self._apply_random_attr_change(gs, attr_changes)
 
         gs.events_history.append({"age": gs.age, "text": narrative})
 
@@ -1165,6 +1134,66 @@ class LifeSimPlugin(Star):
         
         result_line = f" {gs.age}岁：{narrative} {attr_change_str}{extra_note}"
         return [result_line]
+
+    def _parse_ai_response(self, response: str) -> tuple[str, list]:
+        import re
+        attr_pattern = r"【([^】]+)】"
+        matches = re.findall(attr_pattern, response)
+        changes = []
+        for match in matches:
+            parts = match.split("/")
+            for part in parts:
+                part = part.strip()
+                if "体质" in part:
+                    delta = self._extract_delta(part)
+                    if delta != 0:
+                        changes.append({"attr": "体质", "delta": delta})
+                elif "智力" in part:
+                    delta = self._extract_delta(part)
+                    if delta != 0:
+                        changes.append({"attr": "智力", "delta": delta})
+                elif "颜值" in part:
+                    delta = self._extract_delta(part)
+                    if delta != 0:
+                        changes.append({"attr": "颜值", "delta": delta})
+                elif "快乐" in part:
+                    delta = self._extract_delta(part)
+                    if delta != 0:
+                        changes.append({"attr": "快乐", "delta": delta})
+                elif "家境" in part:
+                    delta = self._extract_delta(part)
+                    if delta != 0:
+                        changes.append({"attr": "家境", "delta": delta})
+        
+        clean_text = re.sub(attr_pattern, "", response).strip()
+        return clean_text, changes[:2]
+
+    def _extract_delta(self, text: str) -> int:
+        import re
+        match = re.search(r"([+-]?\d+)", text)
+        if match:
+            return int(match.group(1))
+        return 0
+
+    def _generate_simple_event(self, gs: GameState) -> str:
+        events = [
+            "你度过了平淡的一年。",
+            "生活按部就班地进行着。",
+            "这一年没有什么特别的事情发生。",
+            "日子一天天过去，平淡而充实。",
+            "你继续着日常的生活。",
+        ]
+        return random.choice(events)
+
+    def _apply_random_attr_change(self, gs: GameState, attr_changes: list, positive: bool = True):
+        attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
+        attr_key = random.choice(list(gs.attrs.keys()))
+        if positive:
+            gs.attrs[attr_key] = min(10, gs.attrs[attr_key] + 1)
+            attr_changes.append(f"{attr_names[attr_key]}+1")
+        else:
+            gs.attrs[attr_key] = max(1, gs.attrs[attr_key] - 1)
+            attr_changes.append(f"{attr_names[attr_key]}-1")
 
     async def _handle_death(self, pid: str, gs: GameState, cause: str) -> list:
         gs.alive = False

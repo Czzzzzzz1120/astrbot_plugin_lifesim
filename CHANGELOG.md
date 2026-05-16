@@ -5,11 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-05-16
+
+### Added
+
+- AI 生成叙事时自动包含属性变化标记【体质±N/智力±N/颜值±N/快乐±N/家境±N】
+- 新增属性变化解析系统，AI 生成的内容会真实应用到角色属性
+- 属性变化限制在 1-10 范围内
+
+### Changed
+
+- 优化叙事风格，缩短至 30-50 字，更加简洁有趣
+- 优化提示词，减少冗余信息，让 AI 生成更精准的内容
+- 简化属性变化逻辑，由 AI 主导生成真实有效的属性变化
+
+### Fixed
+
+- 修复缩进错误导致的插件加载失败
+
 ## [1.3.0] - 2026-05-16
 
 ### Added
 
-- 新增快乐和家境属性，属性系统扩展为 5 个：体质、智力、颜值、快乐、家境
+- 新增快乐和家境属性，属性系统扩展为 5 个：体质、智力、颜值、快乐，家境
 - 新增属性变化显示格式【属性+N】，更加直观清晰
 - 新增额外说明功能（如"讨喜"、"长痘了"、"累并幸福着"）
 
