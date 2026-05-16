@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-05-16
+
+### Fixed
+
+- **修复属性加点双重应用**：`_advance_life` 中 LLM 调用异常分支和无 LLM 分支在 `_roll_attr_changes()` 已应用变化后，又额外调用 `_apply_random_attr_change()` 导致属性被加两次
+- **属性边界截断静默失败**：属性已达 1（下限）或 10（上限）时，无法应用的变化被静默丢弃，现在会显示"已达上限"/"已达下限"解释
+- **慰藉加点单次失败**：`_apply_random_attr_change()` 只试一次随机属性，若该属性已达边界则静默失败；现在遍历全部 5 项属性直到成功，全部达边界时显示"属性均已达上限"
+- `_roll_attr_changes` 返回类型从 `list` 改为 `(changes, notes)` 元组：`changes` 只含实际变化（送 AI 写叙事），`notes` 含边界说明（仅展示）
+- `_do_change` 新增 `notes` 参数，截断时写入说明而非丢弃
+
+### Added
+
+- **非指令消息拦截**：游戏中玩家发送非"人生"前缀的消息时，自动阻止 AstrBot 通用 LLM 响应，避免干扰
+
 ## [1.7.0] - 2026-05-16
 
 ### Changed

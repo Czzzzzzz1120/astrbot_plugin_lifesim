@@ -815,6 +815,16 @@ class LifeSimPlugin(Star):
             for chunk in self._split_text(text):
                 yield self._respond(event, chunk)
 
+    @filter.regex(r".")
+    async def _block_llm_during_game(self, event: AstrMessageEvent):
+        msg = event.message_str.strip()
+        if msg.startswith("人生"):
+            return
+        pid = self._player_id(event)
+        gs = self.games.get(pid)
+        if gs and gs.alive and gs.stage not in ("init", "dead"):
+            event.should_call_llm(False)
+
     def _random_talents(self, count: int = 3) -> list:
         weighted = []
         for t in TALENTS:
@@ -1164,7 +1174,6 @@ class LifeSimPlugin(Star):
             return await self._handle_death(pid, gs, f"{cause}去世，享年{gs.age}岁")
 
         attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
-        extra_note = ""
 
         evt = gs.scheduled_events.get(gs.age)
         if evt and gs.age not in [c.get("age") for c in gs.important_choices if "age" in c]:
@@ -1190,7 +1199,7 @@ class LifeSimPlugin(Star):
             lines.append("人生选择 <1/2/3> →")
             return ["\n".join(lines)]
 
-        attr_changes = self._roll_attr_changes(gs)
+        attr_changes, clamped_notes = self._roll_attr_changes(gs)
 
         if self.provider or self.client:
             prompt = self._build_system_prompt(gs)
@@ -1206,26 +1215,25 @@ class LifeSimPlugin(Star):
                     narrative = narrative[:50].rsplit("。", 1)[0] + "。"
             except Exception:
                 narrative = self._generate_simple_event(gs)
-                self._apply_random_attr_change(gs, attr_changes)
         else:
             narrative = self._generate_simple_event(gs)
-            self._apply_random_attr_change(gs, attr_changes)
 
-        if not attr_changes:
+        if not attr_changes and not clamped_notes:
             self._apply_random_attr_change(gs, attr_changes)
-
+        
         gs.events_history.append({"age": gs.age, "text": narrative})
-
+        
         death_cause = await self._ai_check_death(gs, narrative)
         if death_cause:
             logger.info(f"[{pid}] AI judged death at age {gs.age}: {death_cause}")
             return await self._handle_death(pid, gs, f"{death_cause}，享年{gs.age}岁")
-
-        attr_change_str = ""
-        if attr_changes:
-            attr_change_str = f"【{'，'.join(attr_changes)}】"
         
-        result_line = f" {gs.age}岁：{narrative} {attr_change_str}{extra_note}"
+        display_changes = attr_changes + clamped_notes
+        attr_change_str = ""
+        if display_changes:
+            attr_change_str = f"【{'，'.join(display_changes)}】"
+        
+        result_line = f" {gs.age}岁：{narrative} {attr_change_str}"
         return [result_line]
 
     def _parse_ai_response(self, response: str) -> tuple[str, list]:
@@ -1309,66 +1317,74 @@ class LifeSimPlugin(Star):
         ]
         return random.choice(events)
 
-    def _roll_attr_changes(self, gs: GameState) -> list:
+    def _roll_attr_changes(self, gs: GameState) -> tuple:
         changes = []
+        notes = []
         age = gs.age
 
         if age == 0:
-            return changes
+            return changes, notes
 
         roll = random.random()
         if age <= 12:
             if roll < 0.55:
-                self._do_change(gs, changes, random.choice(["体质", "智力", "快乐"]), random.randint(1, 2))
+                self._do_change(gs, changes, random.choice(["体质", "智力", "快乐"]), random.randint(1, 2), notes)
             elif roll < 0.65:
                 for attr in random.sample(["体质", "智力", "快乐", "颜值"], 2):
-                    self._do_change(gs, changes, attr, 1)
+                    self._do_change(gs, changes, attr, 1, notes)
         elif age <= 18:
             if roll < 0.50:
-                self._do_change(gs, changes, random.choice(["智力", "颜值", "快乐", "家境"]), random.randint(1, 2))
+                self._do_change(gs, changes, random.choice(["智力", "颜值", "快乐", "家境"]), random.randint(1, 2), notes)
             elif roll < 0.62:
                 attrs = random.sample(["体质", "智力", "颜值", "快乐", "家境"], 2)
                 for attr in attrs:
-                    self._do_change(gs, changes, attr, random.choice([-1, 1, 1]))
+                    self._do_change(gs, changes, attr, random.choice([-1, 1, 1]), notes)
         elif age <= 30:
             if roll < 0.55:
                 choices = ["体质", "快乐", "家境", "颜值"]
-                self._do_change(gs, changes, random.choice(choices), random.choice([-2, -1, 1, 1, 2]))
+                self._do_change(gs, changes, random.choice(choices), random.choice([-2, -1, 1, 1, 2]), notes)
             elif roll < 0.70:
                 attrs = random.sample(["体质", "智力", "颜值", "快乐", "家境"], 2)
                 for attr in attrs:
-                    self._do_change(gs, changes, attr, random.choice([-2, -1, 1, 2]))
+                    self._do_change(gs, changes, attr, random.choice([-2, -1, 1, 2]), notes)
         elif age <= 50:
             if roll < 0.50:
-                self._do_change(gs, changes, random.choice(["体质", "智力", "家境", "快乐"]), random.choice([-2, -1, 1, 1, 2]))
+                self._do_change(gs, changes, random.choice(["体质", "智力", "家境", "快乐"]), random.choice([-2, -1, 1, 1, 2]), notes)
             elif roll < 0.65:
                 attrs = random.sample(["体质", "智力", "颜值", "快乐", "家境"], 2)
                 for attr in attrs:
-                    self._do_change(gs, changes, attr, random.choice([-2, -1, 1]))
+                    self._do_change(gs, changes, attr, random.choice([-2, -1, 1]), notes)
         else:
             if roll < 0.45:
-                self._do_change(gs, changes, random.choice(["体质", "快乐", "颜值", "家境"]), random.choice([-2, -1, 1]))
+                self._do_change(gs, changes, random.choice(["体质", "快乐", "颜值", "家境"]), random.choice([-2, -1, 1]), notes)
             elif roll < 0.58:
                 attrs = random.sample(["体质", "智力", "颜值", "快乐", "家境"], 2)
                 for attr in attrs:
-                    self._do_change(gs, changes, attr, random.choice([-2, -1, 1]))
+                    self._do_change(gs, changes, attr, random.choice([-2, -1, 1]), notes)
 
-        return changes
+        return changes, notes
 
-    def _do_change(self, gs: GameState, changes: list, attr: str, delta: int):
+    def _do_change(self, gs: GameState, changes: list, attr: str, delta: int, notes: list = None):
         actual = self._mod_attr(gs, attr, delta)
         if actual != 0:
             sign = "+" if actual > 0 else ""
             changes.append(f"{attr}{sign}{actual}")
+        elif delta != 0 and notes is not None:
+            direction = "已达上限" if delta > 0 else "已达下限"
+            notes.append(f"{attr}{direction}")
 
     def _apply_random_attr_change(self, gs: GameState, attr_changes: list, positive: bool = True):
-        attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
-        attr_key = random.choice(list(gs.attrs.keys()))
+        keys = list(gs.attrs.keys())
+        random.shuffle(keys)
         delta = 1 if positive else -1
-        actual = self._mod_attr(gs, attr_key, delta)
-        if actual != 0:
-            sign = "+" if actual > 0 else ""
-            attr_changes.append(f"{attr_names[attr_key]}{sign}{actual}")
+        for attr_key in keys:
+            actual = self._mod_attr(gs, attr_key, delta)
+            if actual != 0:
+                sign = "+" if actual > 0 else ""
+                attr_changes.append(f"{attr_key}{sign}{actual}")
+                return
+        direction = "已达上限" if positive else "已达下限"
+        attr_changes.append(f"属性均{direction}")
 
     async def _handle_death(self, pid: str, gs: GameState, cause: str) -> list:
         gs.alive = False
