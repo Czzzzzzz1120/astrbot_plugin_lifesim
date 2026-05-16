@@ -159,25 +159,84 @@ def calc_score(attrs: dict, talents: list, important_choices: list, alive_years:
     elif total >= 50: grade = "B"
     elif total >= 35: grade = "C"
     elif total >= 20: grade = "D"
-    return {"total": round(total), "grade": grade, "talent_score": talent_score, "choice_score": choice_score, "year_score": round(year_score, 1)}
+    return {"total": round(total), "grade": grade, "talent_score": talent_score, "choice_score": choice_score, "year_score": round(year_score, 1), "total_attrs": total_attrs}
 
 
-def get_life_comment(grade: str, attrs: dict, alive_years: int) -> str:
-    comments = {
-        "SSS": "✨ 传奇人生！你的一生如同史诗般波澜壮阔，被后人永远铭记！",
-        "SS": "🌟 非凡人生！你的成就超越了绝大多数人，成为时代的标杆。",
-        "S": "⭐ 精彩人生！你活出了自己的精彩，留下了许多值得回忆的故事。",
-        "A": "👍 充实人生！你经历了酸甜苦辣，人生丰富多彩。",
-        "B": "😊 平凡人生！虽然没有大起大落，但也有属于自己的幸福。",
-        "C": "😐 平淡人生！你的生活相对单调，但至少平安度过。",
-        "D": "😢 坎坷人生！你经历了许多困难，但坚持到了最后。",
-        "F": "💀 短暂人生！你的生命过早地画上了句号，令人惋惜。"
+ATTR_LABEL = {"体质": ("💪", "体质"), "智力": ("🧠", "智力"), "颜值": ("✨", "颜值"), "快乐": ("😊", "快乐"), "家境": ("💰", "家境")}
+ATTR_COMMENT_HIGH = {"体质": "金刚不坏", "智力": "天才学霸", "颜值": "倾国倾城", "快乐": "人间开心果", "家境": "富可敌国"}
+ATTR_COMMENT_OK = {"体质": "身体不错", "智力": "头脑灵光", "颜值": "略有姿色", "快乐": "知足常乐", "家境": "小康之家"}
+ATTR_COMMENT_MID = {"体质": "身子骨凑合", "智力": "普通人智商", "颜值": "路人脸", "快乐": "平平淡淡", "家境": "勉强温饱"}
+ATTR_COMMENT_LOW = {"体质": "体弱多病", "智力": "脑子不太灵", "颜值": "路人甲", "快乐": "苦大仇深", "家境": "一贫如洗"}
+
+
+def get_attr_comment(attr: str, val: int) -> str:
+    if val >= 9: return ATTR_COMMENT_HIGH.get(attr, "逆天")
+    if val >= 7: return ATTR_COMMENT_OK.get(attr, "还不错")
+    if val >= 5: return ATTR_COMMENT_MID.get(attr, "凑合")
+    return ATTR_COMMENT_LOW.get(attr, "不咋地")
+
+
+def get_life_report(score: dict, attrs: dict, talents: list, important_choices: list, alive_years: int, player_name: str) -> str:
+    grade = score["grade"]
+    total = score["total"]
+
+    grade_emoji = {"SSS": "👑", "SS": "🌟", "S": "⭐", "A": "🎉", "B": "😊", "C": "😐", "D": "😢", "F": "💀"}
+
+    lines = [
+        f"{grade_emoji.get(grade, '')} {player_name}的人生结算 {grade_emoji.get(grade, '')}",
+        f"享年：{alive_years}岁 | 等级：{grade} | 总分：{total}",
+        "",
+        "� 属性评价",
+    ]
+    for attr in ("体质", "智力", "颜值", "快乐", "家境"):
+        emoji, name = ATTR_LABEL.get(attr, ("", attr))
+        val = attrs[attr]
+        bar = "▮" * val + "▯" * (10 - val)
+        comment = get_attr_comment(attr, val)
+        lines.append(f"{emoji}{name}：{val} {bar} {comment}")
+
+    lines.append("")
+    lines.append("━" * 18)
+
+    best_attr = max(attrs, key=attrs.get)
+    worst_attr = min(attrs, key=attrs.get)
+    total_attrs = sum(attrs.values())
+
+    humorous = _build_humorous_comment(grade, attrs, best_attr, worst_attr, alive_years, total_attrs)
+    lines.append(f"💬 {humorous}")
+
+    if alive_years >= 80:
+        lines.append("👴 高寿善终，子孙满堂，人生圆满！")
+    elif alive_years >= 60:
+        lines.append("👨‍🦳 活到花甲之年，也算不枉此生了。")
+    elif alive_years >= 40:
+        lines.append("😐 英年不算早逝，但也算不上长寿。")
+    elif alive_years >= 18:
+        lines.append("😢 年纪轻轻就走了，人生还没真正开始……")
+    else:
+        lines.append("💀 幼年夭折，真是令人心碎……")
+
+    if talents:
+        lines.append(f"🏆 天赋：{'、'.join(t['name'] for t in talents)}")
+    lines.append(f"⚡ 重要抉择：{len(important_choices)}次")
+
+    return "\n".join(lines)
+
+
+def _build_humorous_comment(grade: str, attrs: dict, best: str, worst: str, age: int, total: int) -> str:
+    best_bot = best
+    worst_bot = worst
+    grade_comments = {
+        "SSS": f"堪称完美的一生！你以{best_bot}出众的资质，活出了传奇般的人生。后人将传颂你的名字。",
+        "SS": f"这一生精彩纷呈！凭着一身{best_bot}的本事，你成为了时代的弄潮儿。",
+        "S": f"不枉此生！靠着{best_bot}的优势，你闯出了一片天地。虽然{worst_bot}拉了点后腿，但瑕不掩瑜。",
+        "A": f"这辈子也算活得有滋有味。{best_bot}给了你不少便利，但{worst_bot}着实拖了后腿。",
+        "B": f"平凡但不算无趣。{best_bot}还算过得去，但{worst_bot}让你吃了一些苦头。普通人的人生大抵如此。",
+        "C": f"过得不太顺。{worst_bot}制约了你的发展，你的{best_bot}是唯一亮点。下辈子投个好胎吧。",
+        "D": f"坎坷的一生。受限于{worst_bot}的天赋不足，做什么都差一口气。唯一拿得出手的就是{best_bot}了。",
+        "F": f"人生还没真正开始就结束了。{worst_bot}和{best_bot}都还没来得及发挥作用……",
     }
-    comment = comments.get(grade, "")
-    best = max(attrs, key=attrs.get)
-    best_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
-    comment += f"\n你最突出的属性是{best_names.get(best, best)}（{attrs[best]}），享年{alive_years}岁。"
-    return comment
+    return grade_comments.get(grade, "这辈子就这么过去了。")
 
 
 @dataclass
@@ -288,6 +347,16 @@ class LifeSimPlugin(Star):
 
     def _attr_text(self, attrs: dict) -> str:
         return f"💪{attrs['体质']} 🧠{attrs['智力']} ✨{attrs['颜值']} 😊{attrs['快乐']} 💰{attrs['家境']}"
+
+    def _mod_attr(self, gs: GameState, attr: str, delta: int) -> int:
+        if attr not in gs.attrs:
+            return 0
+        old = gs.attrs[attr]
+        gs.attrs[attr] = max(1, min(10, old + delta))
+        return gs.attrs[attr] - old
+
+    def _attr_bar(self, val: int) -> str:
+        return "▮" * val + "▯" * (10 - val)
 
     async def _get_response(self, system: str, user: str, temperature: float = 0.85, max_tokens: int = 600) -> str:
         if self.provider:
@@ -539,7 +608,7 @@ class LifeSimPlugin(Star):
                 keys = ["体质", "智力", "颜值", "快乐", "家境"]
                 remaining = gs.free_points
                 while remaining > 0:
-                    gs.attrs[random.choice(keys)] += 1
+                    self._mod_attr(gs, random.choice(keys), 1)
                     remaining -= 1
                 gs.free_points = 0
                 yield self._respond(event, f"🎲 随机完成\n{self._attr_text(gs.attrs)}\n人生加点 完成 →")
@@ -566,7 +635,7 @@ class LifeSimPlugin(Star):
                 yield self._respond(event, f"❌ 分配{total}点，仅有{gs.free_points}点\n人生加点 <属性 点数> →")
                 return
             for key, val in assigned.items():
-                gs.attrs[key] += val
+                self._mod_attr(gs, key, val)
             gs.free_points -= total
             done_hint = "\n人生加点 完成 →" if gs.free_points == 0 else ""
             yield self._respond(event, f"已分配 {total}点 剩余{gs.free_points}点\n{self._attr_text(gs.attrs)}{done_hint}")
@@ -899,8 +968,7 @@ class LifeSimPlugin(Star):
             gs.player_name = choice.strip() if choice.strip() else "无名"
             gs.identity = random.choice(IDENTITY)
             for attr, val in gs.identity["bonus"].items():
-                if attr in gs.attrs:
-                    gs.attrs[attr] += val
+                self._mod_attr(gs, attr, val)
             bp = []
             for k, v in gs.identity["bonus"].items():
                 n = {"体质": "体质", "智力": "智", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}.get(k, k)
@@ -947,7 +1015,7 @@ class LifeSimPlugin(Star):
             for chosen in chosen_list:
                 for attr, val in chosen["bonus"].items():
                     if attr in gs.attrs:
-                        gs.attrs[attr] += val
+                        self._mod_attr(gs, attr, val)
             max_age_bonus = sum(ch["bonus"].get("max_age", 0) for ch in chosen_list)
             gs.max_age = calc_max_age(gs.attrs["体质"], gs.attrs["家境"], max_age_bonus)
             gs.current_important = {}
@@ -990,8 +1058,7 @@ class LifeSimPlugin(Star):
                 for change in custom_changes:
                     attr_key = change["attr"]
                     delta = change["delta"]
-                    if attr_key in gs.attrs:
-                        gs.attrs[attr_key] = max(1, min(10, gs.attrs[attr_key] + delta))
+                    self._mod_attr(gs, attr_key, delta)
                 death_cause = await self._ai_check_death(gs, f"{evt.get('title', '')}：自定义行动 {custom or '自行决定'}")
                 if death_cause:
                     logger.info(f"[{pid}] AI judged death at age {gs.age}: {death_cause}")
@@ -1008,26 +1075,25 @@ class LifeSimPlugin(Star):
                     risk = ch.get("risk", "低")
                     gs.important_choices.append({"age": gs.age, "event": evt.get("title", ""), "choice": choice_text, "risk": risk})
                     for attr, val in attr_change.items():
-                        if attr in gs.attrs:
-                            gs.attrs[attr] = max(1, min(10, gs.attrs[attr] + val))
+                        self._mod_attr(gs, attr, val)
                     risk_outcome = ""
                     attr_names_risk = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
                     if risk == "高" and random.random() < 0.55:
                         penalties = random.sample(["体质", "智力", "颜值", "快乐", "家境"], random.randint(1, 2))
                         for penalty_attr in penalties:
                             penalty = random.randint(1, 3)
-                            gs.attrs[penalty_attr] = max(1, gs.attrs[penalty_attr] - penalty)
-                            risk_outcome += f"\n⚠️ {attr_names_risk[penalty_attr]}-{penalty}！"
+                            actual = self._mod_attr(gs, penalty_attr, -penalty)
+                            risk_outcome += f"\n⚠️ {attr_names_risk[penalty_attr]}{actual}！"
                     elif risk == "中" and random.random() < 0.35:
                         penalty_attr = random.choice(["体质", "智力", "颜值", "快乐", "家境"])
                         penalty = random.randint(1, 2)
-                        gs.attrs[penalty_attr] = max(1, gs.attrs[penalty_attr] - penalty)
-                        risk_outcome = f"\n⚠️ {attr_names_risk[penalty_attr]}-{penalty}！"
+                        actual = self._mod_attr(gs, penalty_attr, -penalty)
+                        risk_outcome = f"\n⚠️ {attr_names_risk[penalty_attr]}{actual}！"
                     elif risk == "中" and random.random() < 0.20:
                         bonus_attr = random.choice(["体质", "智力", "颜值", "快乐", "家境"])
                         bonus = random.randint(1, 2)
-                        gs.attrs[bonus_attr] = min(10, gs.attrs[bonus_attr] + bonus)
-                        risk_outcome = f"\n🍀 {attr_names_risk[bonus_attr]}+{bonus}"
+                        actual = self._mod_attr(gs, bonus_attr, bonus)
+                        risk_outcome = f"\n🍀 {attr_names_risk[bonus_attr]}+{actual}"
                     gs.current_important = {}
                     gs.stage = "playing"
                     prompt = self._build_system_prompt(gs)
@@ -1075,8 +1141,7 @@ class LifeSimPlugin(Star):
                 for change in custom_changes:
                     attr_key = change["attr"]
                     delta = change["delta"]
-                    if attr_key in gs.attrs:
-                        gs.attrs[attr_key] = max(1, min(10, gs.attrs[attr_key] + delta))
+                    self._mod_attr(gs, attr_key, delta)
                 logger.info(f"[{pid}] Important event choice: custom({custom_text}) at age {gs.age}")
                 change_str = self._fmt_custom_changes(custom_changes)
                 return f"⚡ {evt.get('title', '')}\n{result}{change_str}\n{self._attr_text(gs.attrs)}\n人生继续 →"
@@ -1291,9 +1356,7 @@ class LifeSimPlugin(Star):
         return changes
 
     def _do_change(self, gs: GameState, changes: list, attr: str, delta: int):
-        old = gs.attrs[attr]
-        gs.attrs[attr] = max(1, min(10, old + delta))
-        actual = gs.attrs[attr] - old
+        actual = self._mod_attr(gs, attr, delta)
         if actual != 0:
             sign = "+" if actual > 0 else ""
             changes.append(f"{attr}{sign}{actual}")
@@ -1301,18 +1364,17 @@ class LifeSimPlugin(Star):
     def _apply_random_attr_change(self, gs: GameState, attr_changes: list, positive: bool = True):
         attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
         attr_key = random.choice(list(gs.attrs.keys()))
-        if positive:
-            gs.attrs[attr_key] = min(10, gs.attrs[attr_key] + 1)
-            attr_changes.append(f"{attr_names[attr_key]}+1")
-        else:
-            gs.attrs[attr_key] = max(1, gs.attrs[attr_key] - 1)
-            attr_changes.append(f"{attr_names[attr_key]}-1")
+        delta = 1 if positive else -1
+        actual = self._mod_attr(gs, attr_key, delta)
+        if actual != 0:
+            sign = "+" if actual > 0 else ""
+            attr_changes.append(f"{attr_names[attr_key]}{sign}{actual}")
 
     async def _handle_death(self, pid: str, gs: GameState, cause: str) -> list:
         gs.alive = False
         gs.stage = "dead"
         score = calc_score(gs.attrs, gs.talents, gs.important_choices, gs.age)
-        comment = get_life_comment(score["grade"], gs.attrs, gs.age)
+        report = get_life_report(score, gs.attrs, gs.talents, gs.important_choices, gs.age, gs.player_name)
         logger.info(f"[{pid}] Game over: {gs.player_name} died at {gs.age} ({cause}), grade={score['grade']}, score={score['total']}")
 
         messages = []
@@ -1339,14 +1401,7 @@ class LifeSimPlugin(Star):
             death_lines.append(eulogy)
         messages.append("\n".join(death_lines))
 
-        score_lines = [
-            f"🏆 {score['grade']}级 · 总分{score['total']}",
-            f"属性{sum(gs.attrs.values())} 天赋{score['talent_score']} 抉择{score['choice_score']} 年龄{score['year_score']}",
-            self._attr_text(gs.attrs),
-            f"⭐ {', '.join(t['name'] for t in gs.talents) or '无'}",
-            comment,
-        ]
-        messages.append("\n".join(score_lines))
+        messages.append(report)
 
         if gs.important_choices:
             choices_lines = ["⚡ 关键抉择"]
