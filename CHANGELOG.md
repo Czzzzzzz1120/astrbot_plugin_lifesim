@@ -1,0 +1,59 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.2.0] - 2026-05-16
+
+### Added
+
+- 丰富叙事功能：每年叙事从 30-50 字扩展到 80-120 字
+- 出生场景描述更加详细，包含环境描写和家人反应
+- 重大事件场景描述更加丰富，增强代入感
+- 出身背景描述更加生动，包含家庭环境和童年氛围
+- 人生总结更加完整，包含成就、遗憾和启示
+
+### Changed
+
+- 更新仓库地址为 `https://github.com/Czzzzzzz1120/astrbot_plugin_lifesim`
+- 优化 AI 生成内容的提示词，提高叙事质量
+- 调整消息分段限制从 800 字符到 1500 字符
+- 更新 README 文档，反映新的功能特性
+
+### Fixed
+
+- 修复仓库地址格式问题，移除 `.git` 后缀以兼容 AstrBot 更新解析器
+
+## [1.1.0] - 2026-05-15
+
+### Added
+
+- 新增 8 个预设世界观：武侠江湖、都市白领、仙侠修真、末日生存、古代宫廷、奇幻冒险、赛博朋克、海岛求生
+- 支持自定义世界观功能
+- 随机天赋系统（30 种天赋）
+- 自由加点系统（10 点自由分配）
+- AI 智能死亡判定
+- 群聊排行榜功能
+
+### Changed
+
+- 优化事件生成逻辑
+- 改进属性影响命运机制
+
+### Fixed
+
+- 修复部分事件描述过长问题
+- 修复属性计算错误
+
+## [1.0.0] - 2026-05-10
+
+### Added
+
+- 初始版本发布
+- 支持角色创建（姓名、性别、出身背景）
+- 基础人生模拟功能
+- 属性系统（力量、智力、魅力、运气）
+- 重要事件系统
+- 人生评价系统

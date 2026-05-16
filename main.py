@@ -70,59 +70,59 @@ IMPORTANT_EVENTS = [
 ]
 
 TALENTS = [
-    {"name": "天生神力", "desc": "力量+3", "bonus": {"strength": 3}, "rarity": 5},
-    {"name": "过目不忘", "desc": "智力+3", "bonus": {"intelligence": 3}, "rarity": 5},
-    {"name": "魅力四射", "desc": "魅力+3", "bonus": {"charisma": 3}, "rarity": 5},
-    {"name": "天选之人", "desc": "运气+3", "bonus": {"luck": 3}, "rarity": 5},
-    {"name": "全能天才", "desc": "全属性+1", "bonus": {"strength": 1, "intelligence": 1, "charisma": 1, "luck": 1}, "rarity": 1},
-    {"name": "身强体壮", "desc": "力量+2 寿命+5", "bonus": {"strength": 2, "max_age": 5}, "rarity": 8},
-    {"name": "聪明伶俐", "desc": "智力+2", "bonus": {"intelligence": 2}, "rarity": 8},
-    {"name": "能说会道", "desc": "魅力+2", "bonus": {"charisma": 2}, "rarity": 8},
-    {"name": "福星高照", "desc": "运气+2 寿命+3", "bonus": {"luck": 2, "max_age": 3}, "rarity": 8},
-    {"name": "逆境重生", "desc": "全属性+2", "bonus": {"strength": 2, "intelligence": 2, "charisma": 2, "luck": 2}, "rarity": 2},
-    {"name": "天妒英才", "desc": "全属性+4 寿命-20", "bonus": {"strength": 4, "intelligence": 4, "charisma": 4, "luck": 4, "max_age": -20}, "rarity": 1},
+    {"name": "天生神力", "desc": "体质+3", "bonus": {"体质": 3}, "rarity": 5},
+    {"name": "过目不忘", "desc": "智力+3", "bonus": {"智力": 3}, "rarity": 5},
+    {"name": "魅力四射", "desc": "颜值+3", "bonus": {"颜值": 3}, "rarity": 5},
+    {"name": "天选之人", "desc": "家境+3", "bonus": {"家境": 3}, "rarity": 5},
+    {"name": "全能天才", "desc": "全属性+1", "bonus": {"体质": 1, "智力": 1, "颜值": 1, "快乐": 1, "家境": 1}, "rarity": 1},
+    {"name": "身强体壮", "desc": "体质+2 寿命+5", "bonus": {"体质": 2, "max_age": 5}, "rarity": 8},
+    {"name": "聪明伶俐", "desc": "智力+2", "bonus": {"智力": 2}, "rarity": 8},
+    {"name": "能说会道", "desc": "颜值+2", "bonus": {"颜值": 2}, "rarity": 8},
+    {"name": "福星高照", "desc": "家境+2 寿命+3", "bonus": {"家境": 2, "max_age": 3}, "rarity": 8},
+    {"name": "逆境重生", "desc": "全属性+2", "bonus": {"体质": 2, "智力": 2, "颜值": 2, "快乐": 2, "家境": 2}, "rarity": 2},
+    {"name": "天妒英才", "desc": "全属性+4 寿命-20", "bonus": {"体质": 4, "智力": 4, "颜值": 4, "快乐": 4, "家境": 4, "max_age": -20}, "rarity": 1},
     {"name": "大器晚成", "desc": "40岁后属性翻倍", "bonus": {"late_bloomer": 1}, "rarity": 3},
     {"name": "早慧", "desc": "16岁前成长速度+50%", "bonus": {"early_growth": 50}, "rarity": 6},
-    {"name": "乐观开朗", "desc": "运气+1 魅力+1", "bonus": {"luck": 1, "charisma": 1}, "rarity": 10},
-    {"name": "沉默寡言", "desc": "智力+2 魅力-1", "bonus": {"intelligence": 2, "charisma": -1}, "rarity": 10},
-    {"name": "体弱多病", "desc": "力量-1 智力+3", "bonus": {"strength": -1, "intelligence": 3}, "rarity": 7},
-    {"name": "命途多舛", "desc": "运气-2 全属性+1", "bonus": {"luck": -2, "strength": 1, "intelligence": 1, "charisma": 1}, "rarity": 7},
+    {"name": "乐观开朗", "desc": "快乐+1 颜值+1", "bonus": {"快乐": 1, "颜值": 1}, "rarity": 10},
+    {"name": "沉默寡言", "desc": "智力+2 颜值-1", "bonus": {"智力": 2, "颜值": -1}, "rarity": 10},
+    {"name": "体弱多病", "desc": "体质-1 智力+3", "bonus": {"体质": -1, "智力": 3}, "rarity": 7},
+    {"name": "命途多舛", "desc": "家境-2 全属性+1", "bonus": {"家境": -2, "体质": 1, "智力": 1, "颜值": 1, "快乐": 1}, "rarity": 7},
     {"name": "平平无奇", "desc": "没有天赋也是一种天赋", "bonus": {}, "rarity": 15},
-    {"name": "天生领袖", "desc": "魅力+2 力量+1", "bonus": {"charisma": 2, "strength": 1}, "rarity": 6},
-    {"name": "好奇宝宝", "desc": "智力+1 运气+1", "bonus": {"intelligence": 1, "luck": 1}, "rarity": 8},
-    {"name": "铁血战士", "desc": "力量+2 魅力-1", "bonus": {"strength": 2, "charisma": -1}, "rarity": 7},
-    {"name": "医者仁心", "desc": "智力+1 魅力+2", "bonus": {"intelligence": 1, "charisma": 2}, "rarity": 7},
-    {"name": "赌徒命格", "desc": "运气+3 力量-1", "bonus": {"luck": 3, "strength": -1}, "rarity": 5},
-    {"name": "学者之魂", "desc": "智力+2 运气-1", "bonus": {"intelligence": 2, "luck": -1}, "rarity": 8},
-    {"name": "浪子回头", "desc": "全属性+1 寿命+10", "bonus": {"strength": 1, "intelligence": 1, "charisma": 1, "luck": 1, "max_age": 10}, "rarity": 2},
-    {"name": "苦行僧", "desc": "力量+2 智力+2 魅力-2", "bonus": {"strength": 2, "intelligence": 2, "charisma": -2}, "rarity": 5},
-    {"name": "艺术家", "desc": "魅力+2 智力+1", "bonus": {"charisma": 2, "intelligence": 1}, "rarity": 7},
-    {"name": "冒险家", "desc": "力量+1 运气+2", "bonus": {"strength": 1, "luck": 2}, "rarity": 6},
-    {"name": "谋略家", "desc": "智力+2 魅力+1", "bonus": {"intelligence": 2, "charisma": 1}, "rarity": 6},
-    {"name": "天煞孤星", "desc": "力量+3 魅力-2 运气+2", "bonus": {"strength": 3, "charisma": -2, "luck": 2}, "rarity": 3},
+    {"name": "天生领袖", "desc": "颜值+2 体质+1", "bonus": {"颜值": 2, "体质": 1}, "rarity": 6},
+    {"name": "好奇宝宝", "desc": "智力+1 快乐+1", "bonus": {"智力": 1, "快乐": 1}, "rarity": 8},
+    {"name": "铁血战士", "desc": "体质+2 颜值-1", "bonus": {"体质": 2, "颜值": -1}, "rarity": 7},
+    {"name": "医者仁心", "desc": "智力+1 颜值+2", "bonus": {"智力": 1, "颜值": 2}, "rarity": 7},
+    {"name": "赌徒命格", "desc": "家境+3 体质-1", "bonus": {"家境": 3, "体质": -1}, "rarity": 5},
+    {"name": "学者之魂", "desc": "智力+2 家境-1", "bonus": {"智力": 2, "家境": -1}, "rarity": 8},
+    {"name": "浪子回头", "desc": "全属性+1 寿命+10", "bonus": {"体质": 1, "智力": 1, "颜值": 1, "快乐": 1, "家境": 1, "max_age": 10}, "rarity": 2},
+    {"name": "苦行僧", "desc": "体质+2 智力+2 颜值-2", "bonus": {"体质": 2, "智力": 2, "颜值": -2}, "rarity": 5},
+    {"name": "艺术家", "desc": "颜值+2 智力+1", "bonus": {"颜值": 2, "智力": 1}, "rarity": 7},
+    {"name": "冒险家", "desc": "体质+1 家境+2", "bonus": {"体质": 1, "家境": 2}, "rarity": 6},
+    {"name": "谋略家", "desc": "智力+2 颜值+1", "bonus": {"智力": 2, "颜值": 1}, "rarity": 6},
+    {"name": "天煞孤星", "desc": "体质+3 颜值-2 家境+2", "bonus": {"体质": 3, "颜值": -2, "家境": 2}, "rarity": 3},
 ]
 
 IDENTITY = [
-    {"name": "富家子弟", "desc": "出生富裕家庭，资源丰富", "bonus": {"luck": 2, "charisma": 1}},
-    {"name": "寒门学子", "desc": "出身贫寒，但志向远大", "bonus": {"intelligence": 2, "strength": 1}},
-    {"name": "将门之后", "desc": "军人家庭，从小习武", "bonus": {"strength": 3}},
-    {"name": "医者传人", "desc": "医学世家，精通药理", "bonus": {"intelligence": 2, "luck": 1}},
-    {"name": "商贾之子", "desc": "商人家庭，耳濡目染", "bonus": {"charisma": 2, "luck": 1}},
-    {"name": "书香门第", "desc": "文化世家，诗书传家", "bonus": {"intelligence": 3}},
-    {"name": "江湖艺人", "desc": "漂泊四方的艺人家庭", "bonus": {"charisma": 2, "luck": 1}},
-    {"name": "孤儿", "desc": "无依无靠，独自成长", "bonus": {"strength": 1, "intelligence": 1, "luck": 1}}
+    {"name": "富家子弟", "desc": "出生富裕家庭，资源丰富", "bonus": {"家境": 2, "颜值": 1}},
+    {"name": "寒门学子", "desc": "出身贫寒，但志向远大", "bonus": {"智力": 2, "体质": 1}},
+    {"name": "将门之后", "desc": "军人家庭，从小习武", "bonus": {"体质": 3}},
+    {"name": "医者传人", "desc": "医学世家，精通药理", "bonus": {"智力": 2, "快乐": 1}},
+    {"name": "商贾之子", "desc": "商人家庭，耳濡目染", "bonus": {"颜值": 2, "家境": 1}},
+    {"name": "书香门第", "desc": "文化世家，诗书传家", "bonus": {"智力": 3}},
+    {"name": "江湖艺人", "desc": "漂泊四方的艺人家庭", "bonus": {"颜值": 2, "家境": 1}},
+    {"name": "孤儿", "desc": "无依无靠，独自成长", "bonus": {"体质": 1, "智力": 1, "快乐": 1}}
 ]
 
 
-def calc_max_age(strength: int, luck: int, talent_bonus: int = 0) -> int:
+def calc_max_age(体质: int, 家境: int, talent_bonus: int = 0) -> int:
     base = 75
-    s_bonus = (strength - 5) * 2
-    l_bonus = (luck - 5) * 1
+    s_bonus = (体质 - 5) * 2
+    l_bonus = (家境 - 5) * 1
     rand = random.randint(-5, 5)
     return max(40, min(120, base + s_bonus + l_bonus + rand + talent_bonus))
 
 
-def calc_death_chance(age: int, max_age: int, luck: int, strength: int) -> float:
+def calc_death_chance(age: int, max_age: int, 家境: int, 体质: int) -> float:
     death_chance = 0.0
     if age < 5:
         death_chance = 0.08
@@ -138,8 +138,8 @@ def calc_death_chance(age: int, max_age: int, luck: int, strength: int) -> float
         death_chance = 0.01
     else:
         death_chance = 0.005
-    luck_bonus = max(-0.5, min(0.5, (5 - luck) * 0.02))
-    strength_bonus = max(-0.3, min(0.3, (3 - strength) * 0.015))
+    luck_bonus = max(-0.5, min(0.5, (5 - 家境) * 0.02))
+    strength_bonus = max(-0.3, min(0.3, (3 - 体质) * 0.015))
     death_chance += luck_bonus + strength_bonus
     death_chance = max(0.0, min(0.95, death_chance))
     return death_chance
@@ -174,10 +174,10 @@ def get_life_comment(grade: str, attrs: dict, alive_years: int) -> str:
         "F": "💀 短暂人生！你的生命过早地画上了句号，令人惋惜。"
     }
     comment = comments.get(grade, "")
-    best = max(attrs, key=attrs.get)
-    best_names = {"strength": "力量", "intelligence": "智力", "charisma": "魅力", "luck": "运气"}
-    comment += f"\n你最突出的属性是{best_names.get(best, best)}（{attrs[best]}），享年{alive_years}岁。"
-    return comment
+        best = max(attrs, key=attrs.get)
+        best_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
+        comment += f"\n你最突出的属性是{best_names.get(best, best)}（{attrs[best]}），享年{alive_years}岁。"
+        return comment
 
 
 @dataclass
@@ -189,7 +189,7 @@ class GameState:
     player_nickname: str = ""
     sender_id: str = ""
     identity: dict = field(default_factory=dict)
-    attrs: dict = field(default_factory=lambda: {"strength": 5, "intelligence": 5, "charisma": 5, "luck": 5})
+    attrs: dict = field(default_factory=lambda: {"体质": 5, "智力": 5, "颜值": 5, "快乐": 5, "家境": 5})
     talents: list = field(default_factory=list)
     free_points: int = 0
     age: int = 0
@@ -287,7 +287,7 @@ class LifeSimPlugin(Star):
         return result[:200]
 
     def _attr_text(self, attrs: dict) -> str:
-        return f"💪{attrs['strength']} 🧠{attrs['intelligence']} ✨{attrs['charisma']} 🍀{attrs['luck']}"
+        return f"💪{attrs['体质']} 🧠{attrs['智力']} ✨{attrs['颜值']} 😊{attrs['快乐']} 💰{attrs['家境']}"
 
     async def _get_response(self, system: str, user: str, temperature: float = 0.85, max_tokens: int = 600) -> str:
         if self.provider:
@@ -533,12 +533,12 @@ class LifeSimPlugin(Star):
                 yield self._respond(event, msg)
                 return
             if arg == "重置":
-                gs.attrs = {"strength": 5, "intelligence": 5, "charisma": 5, "luck": 5}
+                gs.attrs = {"体质": 5, "智力": 5, "颜值": 5, "快乐": 5, "家境": 5}
                 gs.free_points = 10
                 yield self._respond(event, f"已重置\n{self._fmt_attrs(gs.attrs, gs.free_points)}\n人生加点 <属性 点数> →")
                 return
             if arg == "随机":
-                keys = ["strength", "intelligence", "charisma", "luck"]
+                keys = ["体质", "智力", "颜值", "快乐", "家境"]
                 remaining = gs.free_points
                 while remaining > 0:
                     gs.attrs[random.choice(keys)] += 1
@@ -547,11 +547,11 @@ class LifeSimPlugin(Star):
                 yield self._respond(event, f"🎲 随机完成\n{self._attr_text(gs.attrs)}\n人生加点 完成 →")
                 return
 
-            attr_names = {"力量": "strength", "智力": "intelligence", "魅力": "charisma", "运气": "luck"}
+            attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
             nums = arg.split()
             assigned = {}
-            if len(nums) == 4 and all(n.isdigit() for n in nums):
-                keys = ["strength", "intelligence", "charisma", "luck"]
+            if len(nums) == 5 and all(n.isdigit() for n in nums):
+                keys = ["体质", "智力", "颜值", "快乐", "家境"]
                 for i, key in enumerate(keys):
                     assigned[key] = int(nums[i])
             else:
@@ -561,7 +561,7 @@ class LifeSimPlugin(Star):
                         assigned[attr_names[nums[i]]] = int(nums[i + 1])
                         i += 2
                     else:
-                        yield self._respond(event, "❌ 格式错误\n人生加点 力量 3 智力 2\n人生加点 6 9 9 6")
+                        yield self._respond(event, "❌ 格式错误\n人生加点 体质 3 智力 2\n人生加点 6 9 9 6 5")
                         return
             total = sum(assigned.values())
             if total > gs.free_points:
@@ -766,9 +766,9 @@ class LifeSimPlugin(Star):
         fallback = {
             "event_narrative": evt["desc"],
             "choices": [
-                {"text": "谨慎应对", "risk": "低", "attr_change": {"intelligence": 2}},
-                {"text": "积极面对", "risk": "中", "attr_change": {"charisma": 2}},
-                {"text": "冒险一搏", "risk": "高", "attr_change": {"luck": 2}},
+                {"text": "谨慎应对", "risk": "低", "attr_change": {"智力": 2}},
+                {"text": "积极面对", "risk": "中", "attr_change": {"颜值": 2}},
+                {"text": "冒险一搏", "risk": "高", "attr_change": {"家境": 2}},
             ]
         }
         if not (self.provider or self.client):
@@ -781,7 +781,7 @@ class LifeSimPlugin(Star):
             "- 低风险：稳定+2点，8-12字\n"
             "- 中风险：+2-3点，20%额外奖励，8-12字\n"
             "- 高风险：+3-4点，40%惩罚，8-12字（可能导致严重后果）\n"
-            "- 属性：strength/intelligence/charisma/luck\n\n"
+            "- 属性：体质/智力/颜值/快乐/家境\n\n"
             "严格JSON输出：\n"
             '{"event_narrative":"场景(80-120字)","choices":[{"text":"行动(8-12字)","risk":"低","attr_change":{"属性":2}},{"text":"...","risk":"中","attr_change":{...}},{"text":"...","risk":"高","attr_change":{...}}]}'
         )
@@ -835,7 +835,7 @@ class LifeSimPlugin(Star):
 
 
     def _fmt_attrs(self, attrs: dict, free_points: int = 0) -> str:
-        result = f"💪{attrs['strength']} 🧠{attrs['intelligence']} ✨{attrs['charisma']} 🍀{attrs['luck']}"
+        result = f"💪{attrs['体质']} 🧠{attrs['智力']} ✨{attrs['颜值']} 😊{attrs['快乐']} 💰{attrs['家境']}"
         if free_points > 0:
             result += f" | 余{free_points}点"
         return result
@@ -853,7 +853,7 @@ class LifeSimPlugin(Star):
                 "严格按JSON输出：\n"
                 '{"death":true,"cause":"死亡原因(10字以内)"} 或 {"death":false}'
             )
-            attr_desc = f"💪{gs.attrs['strength']} 🧠{gs.attrs['intelligence']} ✨{gs.attrs['charisma']} 🍀{gs.attrs['luck']}"
+            attr_desc = f"💪{gs.attrs['体质']} 🧠{gs.attrs['智力']} ✨{gs.attrs['颜值']} 😊{gs.attrs['快乐']} 💰{gs.attrs['家境']}"
             user_msg = (
                 f"{gs.player_name}，{gs.age}岁/{gs.max_age}岁，{gs.world}。\n"
                 f"属性：{attr_desc}\n"
@@ -895,7 +895,7 @@ class LifeSimPlugin(Star):
                     gs.attrs[attr] += val
             bp = []
             for k, v in gs.identity["bonus"].items():
-                n = {"strength": "力", "intelligence": "智", "charisma": "魅", "luck": "运"}.get(k, k)
+                n = {"体质": "体质", "智力": "智", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}.get(k, k)
                 bp.append(f"{n}+{v}")
             origin_desc = gs.identity["desc"]
             try:
@@ -941,7 +941,7 @@ class LifeSimPlugin(Star):
                     if attr in gs.attrs:
                         gs.attrs[attr] += val
             max_age_bonus = sum(ch["bonus"].get("max_age", 0) for ch in chosen_list)
-            gs.max_age = calc_max_age(gs.attrs["strength"], gs.attrs["luck"], max_age_bonus)
+            gs.max_age = calc_max_age(gs.attrs["体质"], gs.attrs["家境"], max_age_bonus)
             gs.current_important = {}
             gs.stage = "allocate_points"
             gs.free_points = 10
@@ -1054,32 +1054,38 @@ class LifeSimPlugin(Star):
             logger.info(f"[{pid}] Died at age {gs.age}: exceeded max_age+20")
             return await self._handle_death(pid, gs, "寿终正寝，享年" + str(gs.age) + "岁")
 
-        death_chance = calc_death_chance(gs.age, gs.max_age, gs.attrs["luck"], gs.attrs["strength"])
+        death_chance = calc_death_chance(gs.age, gs.max_age, gs.attrs["家境"], gs.attrs["体质"])
         if random.random() < death_chance:
             causes = ["疾病", "意外", "天灾", "战乱", "衰老"]
             cause = random.choice(causes)
             logger.info(f"[{pid}] Died at age {gs.age}: {cause} (chance={death_chance:.3f})")
             return await self._handle_death(pid, gs, f"{cause}去世，享年{gs.age}岁")
 
-        attr_penalty_msg = ""
-        attr_names = {"strength": "力量", "intelligence": "智力", "charisma": "魅力", "luck": "运气"}
-        if gs.attrs["luck"] <= 3 and random.random() < 0.3:
-            penalty_attr = random.choice(["strength", "intelligence", "charisma"])
+        attr_names = {"体质": "体质", "智力": "智力", "颜值": "颜值", "快乐": "快乐", "家境": "家境"}
+        attr_emojis = {"体质": "💪", "智力": "🧠", "颜值": "✨", "快乐": "😊", "家境": "💰"}
+        
+        attr_changes = []
+        extra_note = ""
+
+        if gs.attrs["家境"] <= 3 and random.random() < 0.3:
+            penalty_attr = random.choice(["体质", "智力", "颜值"])
             penalty = random.randint(1, 2)
             gs.attrs[penalty_attr] -= penalty
-            attr_penalty_msg = f"⚠️ 厄运降临！{attr_names[penalty_attr]}-{penalty}"
-        elif gs.attrs["strength"] <= 3 and random.random() < 0.25:
-            gs.attrs["strength"] -= 1
-            attr_penalty_msg = "⚠️ 体弱多病，力量-1"
-        elif gs.attrs["charisma"] <= 3 and random.random() < 0.2:
-            gs.attrs["charisma"] -= 1
-            attr_penalty_msg = "⚠️ 遭人排挤，魅力-1"
+            attr_changes.append(f"{attr_names[penalty_attr]}-{penalty}")
+            extra_note = "（缺钱）"
+        elif gs.attrs["体质"] <= 3 and random.random() < 0.25:
+            gs.attrs["体质"] -= 1
+            attr_changes.append("体质-1")
+            extra_note = "（体弱多病）"
+        elif gs.attrs["颜值"] <= 3 and random.random() < 0.2:
+            gs.attrs["颜值"] -= 1
+            attr_changes.append("颜值-1")
+            extra_note = "（遭人排挤）"
 
         evt = gs.scheduled_events.get(gs.age)
         if evt and gs.age not in [c.get("age") for c in gs.important_choices if "age" in c]:
             gs.stage = "important_event"
             logger.info(f"[{pid}] Important event at age {gs.age}: {evt['title']}")
-            attr_names = {"strength": "力量", "intelligence": "智力", "charisma": "魅力", "luck": "运气"}
             event_content = await self._generate_event_content(gs, evt)
             ai_choices = event_content["choices"]
             event_narrative = event_content["event_narrative"]
@@ -1101,18 +1107,18 @@ class LifeSimPlugin(Star):
             return ["\n".join(lines)]
 
         attr_hint = ""
-        if gs.attrs["strength"] <= 3:
+        if gs.attrs["体质"] <= 3:
             attr_hint += "体弱，"
-        if gs.attrs["intelligence"] <= 3:
+        if gs.attrs["智力"] <= 3:
             attr_hint += "愚钝，"
-        if gs.attrs["charisma"] <= 3:
+        if gs.attrs["颜值"] <= 3:
             attr_hint += "孤僻，"
-        if gs.attrs["luck"] <= 3:
-            attr_hint += "厄运连连，"
-        if gs.attrs["strength"] >= 9:
+        if gs.attrs["家境"] <= 3:
+            attr_hint += "贫困，"
+        if gs.attrs["体质"] >= 9:
             attr_hint += "体魄强健，"
-        if gs.attrs["luck"] >= 9:
-            attr_hint += "福星高照，"
+        if gs.attrs["家境"] >= 9:
+            attr_hint += "家境优渥，"
 
         if self.provider or self.client:
             prompt = self._build_system_prompt(gs)
@@ -1124,25 +1130,27 @@ class LifeSimPlugin(Star):
                 important_desc = f"{last_important['age']}岁{last_important['event']}→{last_important['choice'][:15]}"
             user_msg = (
                 f"{gs.player_name}，{gs.age}岁，{gs.world}。\n"
-                f"属性：💪{gs.attrs['strength']}🧠{gs.attrs['intelligence']}✨{gs.attrs['charisma']}🍀{gs.attrs['luck']}\n"
+                f"属性：{attr_emojis['体质']}{gs.attrs['体质']}{attr_emojis['智力']}{gs.attrs['智力']}{attr_emojis['颜值']}{gs.attrs['颜值']}{attr_emojis['快乐']}{gs.attrs['快乐']}{attr_emojis['家境']}{gs.attrs['家境']}\n"
                 f"状态：{attr_hint or '正常'}\n"
                 f"近况：{recent_desc}\n"
                 f"上次抉择：{important_desc}\n"
-                f"用80-120字描述这一年的经历，包含具体的场景描写、与他人的互动、内心的感受变化。让故事生动有画面感。"
+                f"用简洁有趣的语言描述这一年的经历，包含具体的场景描写、与他人的互动、内心的感受变化。60-80字左右。"
             )
             try:
-                narrative = await self._get_response(prompt, user_msg, 0.9, 200)
+                narrative = await self._get_response(prompt, user_msg, 0.9, 150)
             except Exception:
-                narrative = f"{gs.age}岁，生活继续..."
+                narrative = f"这一年平平淡淡地过去了。"
         else:
-            narrative = f"{gs.age}岁，生活继续..."
+            narrative = f"这一年平平淡淡地过去了。"
 
-        if gs.age % 5 == 0:
+        if gs.age % 5 == 0 or random.random() < 0.3:
             if random.random() < 0.5:
                 attr_key = random.choice(list(gs.attrs.keys()))
                 gs.attrs[attr_key] += 1
-                attr_names = {"strength": "力量", "intelligence": "智力", "charisma": "魅力", "luck": "运气"}
-                narrative += f"\n(+1{attr_names[attr_key]})"
+                attr_changes.append(f"{attr_names[attr_key]}+1")
+                notes = ["（天赋觉醒）", "（运气不错）", "（有所成长）", "（意外收获）", "（努力有回报）", "（贵人相助）"]
+                if not extra_note:
+                    extra_note = random.choice(notes)
 
         gs.events_history.append({"age": gs.age, "text": narrative})
 
@@ -1151,13 +1159,12 @@ class LifeSimPlugin(Star):
             logger.info(f"[{pid}] AI judged death at age {gs.age}: {death_cause}")
             return await self._handle_death(pid, gs, f"{death_cause}，享年{gs.age}岁")
 
-        lines = [f"·{gs.age}岁 {narrative}"]
-        if attr_penalty_msg:
-            lines.append(attr_penalty_msg)
-        lines.append(self._attr_text(gs.attrs))
-        if gs.age >= gs.max_age - 5:
-            lines.append("⚠️ 接近天命")
-        return ["\n".join(lines)]
+        attr_change_str = ""
+        if attr_changes:
+            attr_change_str = f"【{'，'.join(attr_changes)}】"
+        
+        result_line = f" {gs.age}岁：{narrative} {attr_change_str}{extra_note}"
+        return [result_line]
 
     async def _handle_death(self, pid: str, gs: GameState, cause: str) -> list:
         gs.alive = False
