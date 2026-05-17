@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-05-16
+
+### Fixed
+
+- **AI 死亡后无评价/无下一步提示**：`_handle_choice` 中 3 处 AI 死亡分支（自定义选择 4、常规选择 1/2/3、ValueError 自定义文本）只返回了死亡信息字符串，未调用 `_handle_death`，导致：(1) 人生评价不展示 (2) 无"人生开启"提示 (3) 游戏状态未置 dead。现已全部改为调用 `_handle_death` + 前置事件结果
+
+### Changed
+
+- **死亡判定系统优化**：
+  - `_ai_check_death` AI 提示词更精细：要求生成与事件/属性结合的有画面感的死亡原因（如"穿越黑风岭时被土匪杀害"），不再笼统说"意外身亡"
+  - 静态兜底死亡原因改为按最低属性路径匹配（体质→力竭而亡 / 智力→失去意识 / 快乐→万念俱灰 等），不再随机从通用列表选择
+- **属性死亡优化**：`calc_death_chance` 触发死亡时，根据最低属性匹配具体原因（≤3 且概率匹配），覆盖更准
+- `_handle_death` 死亡消息增强：死亡标题行格式化、重启提示添加 🔄 标识
+
 ## [1.8.0] - 2026-05-16
 
 ### Changed

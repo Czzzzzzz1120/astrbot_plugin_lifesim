@@ -927,38 +927,45 @@ class LifeSimPlugin(Star):
 
     async def _ai_check_death(self, gs: GameState, context: str) -> str | None:
         if self.provider or self.client:
+            attrs_desc = "，".join([f"{k}={v}" for k, v in gs.attrs.items()])
             prompt = (
-                "你是人生模拟游戏的死亡裁判官。根据角色当前状态和事件背景，判断角色是否应该死亡。\n\n"
+                "你是人生模拟游戏的死亡裁判官。结合角色属性值、年龄和事件背景，判断角色是否死亡。\n\n"
                 "【死亡判定规则】\n"
-                "- 任意属性极低(≤1)：极高死亡概率\n"
-                "- 任意属性低(≤3)：较高死亡概率，尤其在危险事件中\n"
-                "- 年龄超过预计寿命：自然老死\n"
-                "- 高风险冒险+低属性：大概率死亡\n"
-                "- 属性均衡且不太低：一般不会死亡\n\n"
+                "- 任意属性=1且事件有危险元素：极高概率死亡\n"
+                "- 年龄超过60且多个属性≤3：自然老死/疾病\n"
+                "- 高风险事件中体质≤3或智力≤3：大概率死亡\n"
+                "- 属性均衡且≥5：一般不死\n\n"
+                "【死亡原因要求】\n"
+                "原因需结合事件和属性，要具体有画面感（如：穿越黑风岭时被土匪杀害 / 长期积劳成疾不治而亡），不要笼统说意外身亡。\n\n"
                 "严格按JSON输出：\n"
-                '{"death":true,"cause":"死亡原因(10字以内)"} 或 {"death":false}'
+                '{"death":true,"cause":"具体死亡原因(15字内)"} 或 {"death":false}'
             )
-            attr_desc = f"💪{gs.attrs['体质']} 🧠{gs.attrs['智力']} ✨{gs.attrs['颜值']} 😊{gs.attrs['快乐']} 💰{gs.attrs['家境']}"
-            user_msg = (
-                f"{gs.player_name}，{gs.age}岁/{gs.max_age}岁，{gs.world}。\n"
-                f"属性：{attr_desc}\n"
-                f"事件：{context}\n"
-                f"判断：该角色是否应该死亡？"
-            )
+            user_msg = f"当前属性 {attrs_desc}，事件：{context}，请判定是否死亡"
             try:
-                resp = await self._get_response(prompt, user_msg, 0.7, 100)
-                import json as _json
-                m = _json.loads(resp.strip().strip("`").strip("json").strip())
-                if m.get("death"):
-                    return m.get("cause", "意外身亡")
+                resp = await self._get_response(prompt, user_msg, 0.3, 80)
+                resp = resp.strip()
+                if resp.startswith("```"):
+                    resp = resp.split("\n", 1)[1].rsplit("```", 1)[0]
+                data = json.loads(resp)
+                if data.get("death"):
+                    return data.get("cause", "意外身亡")
             except Exception:
                 pass
 
-        worst = min(gs.attrs.values())
-        if worst <= 1:
-            return random.choice(["身体衰竭", "精神崩溃", "众叛亲离", "厄运缠身"])
-        if worst <= 3 and random.random() < 0.15:
-            return random.choice(["积劳成疾", "遭遇不测", "心力交瘁"])
+        worst_attr = min(gs.attrs.items(), key=lambda x: x[1])
+        attr_death_map = {
+            "体质": "身体极度虚弱，力竭而亡",
+            "智力": "神智不清，失去了最后的意识",
+            "颜值": "容貌尽毁，郁郁而终",
+            "快乐": "万念俱灰，带着无尽的痛苦离开人世",
+            "家境": "家徒四壁，在饥寒交迫中死去"
+        }
+        if worst_attr[1] <= 1:
+            return attr_death_map.get(worst_attr[0], "命运多舛，走到了生命的尽头")
+        if worst_attr[1] <= 3 and gs.age > 50:
+            return f"年老体衰，{worst_attr[0]}不济，撒手人寰"
+        if worst_attr[1] <= 3 and any(kw in context for kw in ["冒险", "战斗", "搏斗", "逃", "闯", "攻击", "厮杀", "拼命", "黑风", "陷阱", "毒"]):
+            return f"在危险中因{worst_attr[0]}不足，遭遇不测"
         return None
 
     async def _handle_choice(self, pid: str, gs: GameState, choice: str) -> str:
@@ -1070,7 +1077,8 @@ class LifeSimPlugin(Star):
                 death_cause = await self._ai_check_death(gs, f"{evt.get('title', '')}：自定义行动 {custom or '自行决定'}")
                 if death_cause:
                     logger.info(f"[{pid}] AI judged death at age {gs.age}: {death_cause}")
-                    return [f"⚡ {evt.get('title', '')}\n{result}\n💀 {death_cause}，享年{gs.age}岁"]
+                    death_msgs = await self._handle_death(pid, gs, f"{death_cause}，享年{gs.age}岁")
+                    return [f"⚡ {evt.get('title', '')}\n{result}"] + death_msgs
                 logger.info(f"[{pid}] Important event choice: custom at age {gs.age}")
                 change_str = self._fmt_custom_changes(custom_changes)
                 return f"⚡ {evt.get('title', '')}\n{result}{change_str}\n{self._attr_text(gs.attrs)}\n人生继续 →"
@@ -1116,7 +1124,8 @@ class LifeSimPlugin(Star):
                     death_cause = await self._ai_check_death(gs, f"{evt.get('title', '')}：{choice_text}（{risk}风险）")
                     if death_cause:
                         logger.info(f"[{pid}] AI judged death at age {gs.age}: {death_cause}")
-                        return [f"⚡ {evt.get('title', '')}\n{result}{risk_outcome}\n💀 {death_cause}，享年{gs.age}岁"]
+                        death_msgs = await self._handle_death(pid, gs, f"{death_cause}，享年{gs.age}岁")
+                        return [f"⚡ {evt.get('title', '')}\n{result}{risk_outcome}"] + death_msgs
                     logger.info(f"[{pid}] Important event choice: {choice_text} (risk={risk}) at age {gs.age}")
                     return f"⚡ {evt.get('title', '')}\n{result}{risk_outcome}\n{self._attr_text(gs.attrs)}\n人生继续 →"
                 else:
@@ -1150,6 +1159,11 @@ class LifeSimPlugin(Star):
                     attr_key = change["attr"]
                     delta = change["delta"]
                     self._mod_attr(gs, attr_key, delta)
+                death_cause = await self._ai_check_death(gs, f"{evt.get('title', '')}：自定义行动 {custom_text}")
+                if death_cause:
+                    logger.info(f"[{pid}] AI judged death at age {gs.age}: {death_cause}")
+                    death_msgs = await self._handle_death(pid, gs, f"{death_cause}，享年{gs.age}岁")
+                    return [f"⚡ {evt.get('title', '')}\n{result}"] + death_msgs
                 logger.info(f"[{pid}] Important event choice: custom({custom_text}) at age {gs.age}")
                 change_str = self._fmt_custom_changes(custom_changes)
                 return f"⚡ {evt.get('title', '')}\n{result}{change_str}\n{self._attr_text(gs.attrs)}\n人生继续 →"
@@ -1166,8 +1180,18 @@ class LifeSimPlugin(Star):
 
         death_chance = calc_death_chance(gs.age, gs.max_age, gs.attrs["家境"], gs.attrs["体质"])
         if random.random() < death_chance:
-            causes = ["疾病", "意外", "天灾", "战乱", "衰老"]
-            cause = random.choice(causes)
+            worst_attr = min(gs.attrs.items(), key=lambda x: x[1])
+            attr_cause_map = {
+                "体质": "久病不愈，身体彻底垮掉",
+                "智力": "误判形势，酿成大祸",
+                "颜值": "仇家寻衅，不幸遇害",
+                "快乐": "心如死灰，了无生趣",
+                "家境": "山穷水尽，走投无路"
+            }
+            if worst_attr[1] <= 3 and random.random() < 0.7:
+                cause = attr_cause_map.get(worst_attr[0], "命运无常")
+            else:
+                cause = random.choice(["突发恶疾", "意外事故", "天灾降临"])
             logger.info(f"[{pid}] Died at age {gs.age}: {cause} (chance={death_chance:.3f})")
             return await self._handle_death(pid, gs, f"{cause}去世，享年{gs.age}岁")
 
@@ -1399,7 +1423,7 @@ class LifeSimPlugin(Star):
                 pass
 
         death_lines = [
-            f"💀 {gs.player_name} ·{gs.age}岁{cause}",
+            f"💀 {gs.player_name} ·{gs.age}岁 {cause}",
         ]
         if eulogy:
             death_lines.append(eulogy)
@@ -1415,6 +1439,6 @@ class LifeSimPlugin(Star):
             for chunk in self._split_text(choices_text):
                 messages.append(chunk)
 
-        messages.append("人生开启 <世界观> → 重新开始")
+        messages.append("🔄 人生开启 <世界观> → 重新开始")
 
         return messages
