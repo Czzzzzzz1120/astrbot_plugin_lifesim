@@ -43,6 +43,17 @@ WORLDS = {
     }
 }
 
+DEFAULT_SPECIES = {
+    "武侠江湖": ["武林高手", "江湖侠客", "世家子弟", "妖兽", "山野隐士"],
+    "都市白领": ["打工人", "创业者", "富二代", "自由职业者", "学生"],
+    "仙侠修真": ["人族修士", "灵兽", "妖修", "鬼族", "仙灵"],
+    "末日生存": ["幸存者", "变异人", "机器人", "流浪者", "雇佣兵"],
+    "古代宫廷": ["皇子/公主", "官员", "将领", "太监/宫女", "商人"],
+    "奇幻冒险": ["人类", "精灵", "矮人", "半兽人", "龙裔"],
+    "赛博朋克": ["雇佣兵", "黑客", "企业职员", "仿生人", "街头混混"],
+    "海岛求生": ["漂流者", "土著", "探险家", "海盗", "野人"],
+}
+
 IMPORTANT_EVENTS = [
     {"title": "天赋觉醒", "desc": "你展现出异于常人的天赋，让周围的人大为惊讶。", "age_range": (1, 12)},
     {"title": "童年危机", "desc": "一场突如其来的变故打破了你的平静生活。", "age_range": (1, 12)},
@@ -244,6 +255,7 @@ def _build_humorous_comment(grade: str, attrs: dict, best: str, worst: str, age:
 class GameState:
     stage: str = "init"
     world: str = ""
+    species: str = ""
     gender: str = ""
     player_name: str = ""
     player_nickname: str = ""
@@ -390,33 +402,28 @@ class LifeSimPlugin(Star):
 
     def _build_system_prompt(self, gs: GameState) -> str:
         talent_names = [t["name"] for t in gs.talents]
+        world_desc = WORLDS.get(gs.world, {}).get("desc", gs.world)
+        species_str = f"{gs.species}，" if gs.species else ""
+        identity_name = gs.identity.get('name', '普通人')
+        identity_desc = gs.identity.get('desc', '')
         return (
-            f"人生模拟游戏。世界观：{gs.world}。玩家{gs.player_name}，{gs.identity.get('name', '普通人')}，{gs.gender}。"
+            f"人生模拟游戏。世界观：{gs.world}（{world_desc}）。"
+            f"角色：{species_str}{identity_name}，{gs.gender}。"
             f"天赋：{', '.join(talent_names) or '无'}。"
             f"用'你'叙述。只写一句话，不超过40字。简洁、有趣、像生活片段。不写【】。"
-            f"情节与世界观、过往保持连贯。"
+            f"情节与世界观、物种、身份保持连贯一致。"
         )
 
     def _is_group(self, event: AstrMessageEvent) -> bool:
         return bool(event.get_group_id())
 
     def _respond(self, event: AstrMessageEvent, text: str):
-        if self._is_group(event):
-            gs = self._get_game(event)
-            nickname = ""
-            if gs and gs.player_nickname and gs.player_nickname != "N/A":
-                nickname = gs.player_nickname
-            if not nickname:
-                name = event.get_sender_name()
-                nickname = name if name and name != "N/A" else event.get_sender_id()
-            if gs and gs.stage not in ("init", "choose_gender", "choose_name", "choose_talent", "allocate_points", "dead"):
-                char_name = gs.player_name or nickname
-                text = f"📖 {char_name}的故事\n{text}"
-            return event.make_result().at(nickname, event.get_sender_id()).message(f"\n{text}")
         gs = self._get_game(event)
         if gs and gs.stage not in ("init", "choose_gender", "choose_name", "choose_talent", "allocate_points", "dead"):
             char_name = gs.player_name or "你"
             text = f"📖 {char_name}的故事\n{text}"
+        if self._is_group(event):
+            return event.plain_result(text)
         return event.plain_result(text)
 
     def _split_text(self, text: str, max_len: int = QQ_MSG_LIMIT) -> list:
@@ -456,6 +463,8 @@ class LifeSimPlugin(Star):
                 parts.append("\n".join(msg_lines))
         lines = ["\n\n".join(parts)] if parts else []
         lines.append(self._attr_text(gs.attrs))
+        if gs.species:
+            lines.insert(0, f"🐾 {gs.species}")
         if gs.age >= gs.max_age - 5:
             lines.append("⚠️ 接近天命")
         if add_prompt:
@@ -517,23 +526,18 @@ class LifeSimPlugin(Star):
             )
             return
         if world_name in WORLDS:
-            self.games[pid] = GameState(stage="choose_gender", world=world_name, player_nickname=event.get_sender_name(), sender_id=event.get_sender_id())
-            self._touch(self.games[pid])
-            logger.info(f"[{pid}] New game started: world={world_name}")
-            yield self._respond(event,
-                f"🌍 {world_name}\n{WORLDS[world_name]['desc']}\n"
-                f"① 选性别 1.男 2.女 3.其他\n"
-                f"人生选择 <1/2/3> →"
-            )
-            return
-        self.games[pid] = GameState(stage="choose_gender", world=world_name, player_nickname=event.get_sender_name(), sender_id=event.get_sender_id())
+            world_desc = WORLDS[world_name]['desc']
+        else:
+            world_desc = f"自定义世界：{world_name}"
+        self.games[pid] = GameState(stage="choose_species", world=world_name, player_nickname=event.get_sender_name(), sender_id=event.get_sender_id())
         self._touch(self.games[pid])
-        logger.info(f"[{pid}] New game started: custom world={world_name}")
-        yield self._respond(event,
-            f"🌍 {world_name}\n"
-            f"① 选性别 1.男 2.女 3.其他\n"
-            f"人生选择 <1/2/3> →"
-        )
+        logger.info(f"[{pid}] New game started: world={world_name}")
+        species_examples = await self._generate_species_examples(world_name)
+        menu_lines = [f"🌍 {world_name}\n{world_desc}\n", "物种选择", f"1.人类"]
+        for ex in species_examples:
+            menu_lines.append(f"·{ex}（仅作参考）")
+        menu_lines.append("直接回复 1 选择人类，或输入自定义物种（如：精灵、妖兽...）\n人生选择 <物种> →")
+        yield self._respond(event, "\n".join(menu_lines))
 
     @filter.command("人生选择", alias={"rlchoose", "rlxz"})
     async def cmd_choose(self, event: AstrMessageEvent):
@@ -683,7 +687,7 @@ class LifeSimPlugin(Star):
                 return
             lines = [
                 f"📋 {gs.player_name or '未设定'} · {gs.age}岁",
-                f"{gs.world} · {gs.identity.get('name', '未设定')} · {gs.gender}",
+                f"{gs.world} · {gs.species or '人类'} · {gs.identity.get('name', '未设定')} · {gs.gender}",
                 self._attr_text(gs.attrs),
                 f"寿命: {gs.max_age}岁",
             ]
@@ -724,7 +728,7 @@ class LifeSimPlugin(Star):
                 if self.provider or self.client:
                     prompt = self._build_system_prompt(gs)
                     user_msg = (
-                        f"{gs.player_name}，1岁，{gs.world}。"
+                        f"{gs.species or '人类'}，{gs.identity.get('name', '普通人')}，1岁，{gs.world}。"
                         f"用30-40字描述出生场景。"
                     )
                     try:
@@ -813,15 +817,24 @@ class LifeSimPlugin(Star):
             for chunk in self._split_text(text):
                 yield self._respond(event, chunk)
 
-    @filter.regex(r".")
-    async def _block_llm_during_game(self, event: AstrMessageEvent):
-        msg = event.message_str.strip()
-        if msg.startswith("人生"):
-            return
-        pid = self._player_id(event)
-        gs = self.games.get(pid)
-        if gs and gs.alive and gs.stage not in ("init", "dead"):
-            event.should_call_llm(False)
+    async def _generate_species_examples(self, world: str) -> list:
+        if self.provider or self.client:
+            prompt = "你是人生模拟游戏的世界观设计师。根据给定的世界观，生成3-5个适合的种族/物种（不要包含人类）。返回纯JSON数组，如：[\"妖兽\",\"灵族\",\"鬼族\"]"
+            user_msg = f"世界观：{world}"
+            try:
+                resp = await self._get_response(prompt, user_msg, 0.8, 100)
+                resp = resp.strip()
+                if resp.startswith("```"):
+                    resp = resp.split("\n", 1)[1].rsplit("```", 1)[0]
+                start = resp.find("[")
+                end = resp.rfind("]") + 1
+                if start != -1 and end > start:
+                    examples = json.loads(resp[start:end])
+                    if isinstance(examples, list) and examples:
+                        return examples[:5]
+            except Exception:
+                pass
+        return DEFAULT_SPECIES.get(world, ["原住民", "冒险者", "商人", "学者", "工匠"])
 
     def _random_talents(self, count: int = 3) -> list:
         weighted = []
@@ -869,7 +882,7 @@ class LifeSimPlugin(Star):
         attr_desc = ", ".join(f"{k}={v}" for k, v in gs.attrs.items())
         user_msg = (
             f"世界观：{gs.world}\n"
-            f"角色：{gs.player_name}，{gs.age}岁，{gs.identity.get('name', '普通人')}\n"
+            f"角色：{gs.species or '人类'}，{gs.identity.get('name', '普通人')}，{gs.age}岁\n"
             f"当前属性：{attr_desc}\n"
             f"事件标题：{evt['title']}\n"
             f"事件背景：{evt['desc']}\n"
@@ -971,6 +984,19 @@ class LifeSimPlugin(Star):
     async def _handle_choice(self, pid: str, gs: GameState, choice: str) -> str:
         stage = gs.stage
 
+        if stage == "choose_species":
+            if choice == "1":
+                gs.species = "人类"
+                gs.stage = "choose_gender"
+                return f"物种：人类\n① 选性别 1.男 2.女 3.其他\n人生选择 <1/2/3> →"
+            custom_species = choice.strip()
+            if custom_species:
+                gs.species = custom_species
+                gs.stage = "choose_gender"
+                logger.info(f"[{pid}] Custom species chosen: {custom_species}")
+                return f"物种：{custom_species}\n① 选性别 1.男 2.女 3.其他\n人生选择 <1/2/3> →"
+            return "❌ 请输入物种名称或选择 1.人类"
+
         if stage == "choose_gender":
             gender_map = {"1": "男", "2": "女", "3": "其他"}
             if choice not in gender_map:
@@ -991,8 +1017,11 @@ class LifeSimPlugin(Star):
             origin_desc = gs.identity["desc"]
             try:
                 origin_desc = await self._get_response(
-                    "你是一个人生模拟游戏的叙述者。根据世界观和出身类型，用30-40字描述角色的出身背景。",
-                    f"世界观：{gs.world}\n角色名：{gs.player_name}\n性别：{gs.gender}\n出身类型：{gs.identity['name']}（{gs.identity['desc']}）",
+                    "你是一个人生模拟游戏的叙述者。根据世界观、物种和出身类型，用30-40字描述角色的出身背景。",
+                    f"世界观：{gs.world}"
+                    f"物种：{gs.species or '人类'}"
+                    f"性别：{gs.gender}"
+                    f"出身类型：{gs.identity['name']}（{gs.identity['desc']}）",
                     0.9, 80
                 )
                 origin_desc = origin_desc.strip()
@@ -1058,7 +1087,7 @@ class LifeSimPlugin(Star):
                 attr_desc = ", ".join(f"{k}={v}" for k, v in gs.attrs.items())
                 prompt = self._build_system_prompt(gs)
                 user_msg = (
-                    f"玩家{gs.player_name}在{gs.age}岁时发生了重要事件：{evt.get('title', '')}。\n"
+                    f"角色（{gs.species or '人类'}）在{gs.age}岁时发生了重要事件：{evt.get('title', '')}。\n"
                     f"事件详情：{narrative}\n"
                     f"当前属性：{attr_desc}\n"
                     f"玩家选择了自定义行动：{custom or '自行决定'}。\n"
@@ -1114,7 +1143,7 @@ class LifeSimPlugin(Star):
                     gs.stage = "playing"
                     prompt = self._build_system_prompt(gs)
                     user_msg = (
-                        f"{gs.player_name}，{gs.age}岁，事件：{evt.get('title', '')}，"
+                        f"{gs.species or '人类'}，{gs.age}岁，事件：{evt.get('title', '')}，"
                         f"选择了：{choice_text}（{risk}风险）。用50字描述结果。"
                     )
                     try:
@@ -1143,7 +1172,7 @@ class LifeSimPlugin(Star):
                 attr_desc = ", ".join(f"{k}={v}" for k, v in gs.attrs.items())
                 prompt = self._build_system_prompt(gs)
                 user_msg = (
-                    f"玩家{gs.player_name}在{gs.age}岁时发生了重要事件：{evt.get('title', '')}。\n"
+                    f"角色（{gs.species or '人类'}）在{gs.age}岁时发生了重要事件：{evt.get('title', '')}。\n"
                     f"事件详情：{narrative}\n"
                     f"当前属性：{attr_desc}\n"
                     f"玩家选择了自定义行动：{custom_text}。\n"
@@ -1227,9 +1256,9 @@ class LifeSimPlugin(Star):
             prompt = self._build_system_prompt(gs)
             if attr_changes:
                 change_desc = "，".join(attr_changes)
-                user_msg = f"{gs.player_name}{gs.age}岁。今年{change_desc}。围绕这个变化写一句30字内叙事，不写【】。"
+                user_msg = f"{gs.age}岁。今年{change_desc}。围绕这个变化写一句30字内叙事，不写【】。"
             else:
-                user_msg = f"写一句{gs.player_name}{gs.age}岁时的生活片段，不超过30字。"
+                user_msg = f"写一句{gs.age}岁时的生活片段，不超过30字。"
             try:
                 narrative = await self._get_response(prompt, user_msg, 0.7, 60)
                 narrative = narrative.strip()
@@ -1412,7 +1441,7 @@ class LifeSimPlugin(Star):
             summary_events = [f"{e['age']}岁: {e['text'][:30]}" for e in gs.events_history[-5:]]
             prompt = self._build_system_prompt(gs)
             user_msg = (
-                f"玩家{gs.player_name}在{gs.age}岁时{cause}。身份：{gs.identity.get('name', '')}，"
+                f"{gs.species or '人类'}，{gs.identity.get('name', '')}，在{gs.age}岁时{cause}。"
                 f"天赋：{', '.join(t['name'] for t in gs.talents) or '无'}，"
                 f"关键事件：{'; '.join(summary_events)}。"
                 f"用50-70字写一段人生总结，回顾角色的一生，包含主要成就、遗憾和对后人的启示。"

@@ -5,7 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.8.1] - 2026-05-16
+## \[1.9.0] - 2026-05-17
+
+### Added
+
+- **物种系统**：创建角色时可选择物种（1.人类 / 自定义），AI 根据世界观生成参考物种示例
+  - 8 个世界观的预置物种建议（如仙侠→人族修士/灵兽/妖修/鬼族/仙灵）
+  - 自定义物种内容贯穿全部后续对话、叙事、事件和评价
+  - 新增 `_generate_species_examples` 方法调用 AI 生成世界适配物种
+- `GameState` 新增 `species` 字段
+
+### Changed
+
+- **对话与背景统一**：`_build_system_prompt` 重写，注入世界观描述 + 物种 + 身份描述，AI 叙事与世界观保持一致
+- **名字独立化**：从所有 AI 提示词中移除 `player_name`，改为仅用于显示（如 `📖 xxx的故事`），名字不再影响 AI 生成内容的方向
+- **群聊修复**：移除可能冲突的 `@filter.regex` 拦截器；`_respond` 统一为 `event.plain_result()` 输出，群聊/私聊行为一致
+- 以下 AI 提示词全部注入物种和背景：`_generate_event_content` / 出生场景 / 年龄叙事 / 自定义选择 / 重要事件 / 死亡判定 / 人生总结
+- `cmd_status` 显示物种信息；`_build_story_block` 显示 `🐾 物种` 标识
+
+### Removed
+
+- `@filter.regex(r".")` 全部消息拦截器（与 `@filter.command` 冲突导致群聊有几率不回复）
+
+## \[1.8.1] - 2026-05-17
 
 ### Fixed
 
@@ -19,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **属性死亡优化**：`calc_death_chance` 触发死亡时，根据最低属性匹配具体原因（≤3 且概率匹配），覆盖更准
 - `_handle_death` 死亡消息增强：死亡标题行格式化、重启提示添加 🔄 标识
 
-## [1.8.0] - 2026-05-16
+## \[1.8.0] - 2026-05-16
 
 ### Changed
 
@@ -35,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 删除 `WORLDS` 中从未使用的 `"start"` 字段（8 个世界观各减少一行）
 - 移除 `_do_change` 和 `_apply_random_attr_change` 中不可能触发的"已达上限"分支
 
-## [1.7.1] - 2026-05-16
+## \[1.7.1] - 2026-05-16
 
 ### Fixed
 
@@ -49,15 +71,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **非指令消息拦截**：游戏中玩家发送非"人生"前缀的消息时，自动阻止 AstrBot 通用 LLM 响应，避免干扰
 
-## [1.7.0] - 2026-05-16
+## \[1.7.0] - 2026-05-16
 
 ### Changed
 
-- **属性系统重构**：新增中央属性修改方法 `_mod_attr()`，所有属性加减统一通过该方法处理，自动限制范围 [1, 10]
+- **属性系统重构**：新增中央属性修改方法 `_mod_attr()`，所有属性加减统一通过该方法处理，自动限制范围 \[1, 10]
 - **人生评价重构**：模仿「人生重开模拟器」评价风格，全面重写结算界面
   - 新增可视化属性进度条（▮▯），直观展示五项属性水平
   - 新增属性等级评语（金刚不坏/天才学霸/倾国倾城/人间开心果/富可敌国 等）
-  - 新增幽默人生总评（根据 SSS~F 等级生成不同风格的调侃文字）
+  - 新增幽默人生总评（根据 SSS\~F 等级生成不同风格的调侃文字）
   - 新增享年分段评价（高寿善终/花甲之年/英年早逝/幼年夭折）
   - 结算面板包含：属性评价 → 人生总评 → 享年评价 → 天赋与抉择统计
 
@@ -65,20 +87,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 修复多处属性修改绕过边界检查的问题：天赋加成、身份加成、自定义选择、风险惩罚/奖励、随机属性变化等 8 处统一使用 `_mod_attr`
 
-## [1.6.1] - 2026-05-16
+## \[1.6.1] - 2026-05-16
 
 ### Fixed
 
 - 修复 `_roll_attr_changes()` 在重要事件年份被提前执行导致属性静默变化
 - 优化属性→叙事流程：代码先随机属性变化，再将变化告知 AI，AI 围绕变化写一句叙事（避免矛盾）
-- 叙事更短更纯粹：AI 提示词 30 字内，max_tokens 降至 60
+- 叙事更短更纯粹：AI 提示词 30 字内，max\_tokens 降至 60
 
 ### Changed
 
 - 有属性变化时：`{姓名}{年龄}岁。今年{体质+1，智力-1}。围绕这个变化写一句30字内叙事，不写【】`
 - 无属性变化时：`写一句{姓名}{年龄}岁时的生活片段，不超过30字`
 
-## [1.6.0] - 2026-05-16
+## \[1.6.0] - 2026-05-16
 
 ### Added
 
@@ -90,9 +112,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 属性校验大幅放宽：添加 12 组英→中映射表（如 strength→体质），AI 不再因英文属性名被丢弃
 - 风险系统重新平衡：
-  - 低风险：+2~3 点（稳定，无额外风险）
-  - 中风险：+3~5 点 + 35% 惩罚(-1~2) 或 20% 额外奖励(+1~2)
-  - 高风险：+5~7 点 + 55% 惩罚(-1~3，可能双属性)
+  - 低风险：+2\~3 点（稳定，无额外风险）
+  - 中风险：+3\~5 点 + 35% 惩罚(-1\~2) 或 20% 额外奖励(+1\~2)
+  - 高风险：+5\~7 点 + 55% 惩罚(-1\~3，可能双属性)
 - 属性变化统一使用边界保护 `max(1, min(10, ...)`
 
 ### Fixed
@@ -101,7 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI 生成英文属性名导致选项被丢弃 → 现在自动映射为中文属性名
 - 中风险之前仅有 20% +1 奖励，现增加惩罚机制更加合理
 
-## [1.5.0] - 2026-05-16
+## \[1.5.0] - 2026-05-16
 
 ### Changed
 
@@ -111,19 +133,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - AI 不再负责决定属性和生成【】，只写一句 ≤40 字的生活片段
 - 系统提示词大幅精简：「只写一句话，不超过40字。简洁、有趣、像生活片段」
 - 所有场景 length 再次缩短：出生 30-40、背景 30-40、事件场景 30-40、人生总结 50-70
-- 年度叙事 max_tokens 降至 80，事件结果降至 80
+- 年度叙事 max\_tokens 降至 80，事件结果降至 80
 
 ### Fixed
 
 - 属性变化 100% 真实有效（代码直接修改 `gs.attrs`，不再依赖 AI 解析）
 - 【】内容始终与属性实际变化一致
 
-## [1.4.1] - 2026-05-16
+## \[1.4.1] - 2026-05-16
 
 ### Fixed
 
 - 修复【】内属性变化不生效：`_parse_ai_response` 现在支持 `，` `、` `/` 等多种分隔符
-- 修复重要事件选择后属性变化无法继承：risk_outcome 中的旧属性名导致 KeyError
+- 修复重要事件选择后属性变化无法继承：risk\_outcome 中的旧属性名导致 KeyError
 - 修复 `_generate_event_content` 校验逻辑仍用旧属性名
 
 ### Changed
@@ -132,7 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 简化所有提示词，删除冗余描述，让 AI 生成更精准的精简内容
 - 系统提示词中直接指导属性变化格式：【体质+1】或【体质-1，智力+1】
 
-## [1.4.0] - 2026-05-16
+## \[1.4.0] - 2026-05-16
 
 ### Added
 
@@ -150,7 +172,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 修复缩进错误导致的插件加载失败
 
-## [1.3.0] - 2026-05-16
+## \[1.3.0] - 2026-05-16
 
 ### Added
 
@@ -170,7 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 修复属性计算相关的兼容性问题
 
-## [1.2.0] - 2026-05-16
+## \[1.2.0] - 2026-05-16
 
 ### Added
 
@@ -191,7 +213,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 修复仓库地址格式问题，移除 `.git` 后缀以兼容 AstrBot 更新解析器
 
-## [1.1.0] - 2026-05-15
+## \[1.1.0] - 2026-05-15
 
 ### Added
 
@@ -212,7 +234,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 修复部分事件描述过长问题
 - 修复属性计算错误
 
-## [1.0.0] - 2026-05-10
+## \[1.0.0] - 2026-05-10
 
 ### Added
 
@@ -222,3 +244,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 属性系统（力量、智力、魅力、运气）
 - 重要事件系统
 - 人生评价系统
+
